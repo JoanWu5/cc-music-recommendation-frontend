@@ -1,31 +1,75 @@
 import React from 'react';
 import Navigator from "./Navigator";
-import {Layout, List, Typography, Row, Col, Card, Button} from "antd";
+import {Layout, List, Typography, Row, Col, Card, Button, message, Spin} from "antd";
 import { Link } from "react-router-dom";
 
 const { Header, Content, Footer } = Layout;
 const { Title } = Typography
 
-const data = [
-    {
-        "music": 'Wish You Were Here',
-        "artist": 'Pink Floyd',
-    },
-    {
-        "music": 'Firth Of Fifth',
-        "artist": 'Genesis',
-    },
-    {
-        "music": 'Larks’ Tongues In Aspic, Pt. II',
-        "artist": 'King Crimson',
-    },
-    {
-        "music": 'No Quarter',
-        "artist": 'Led Zeppelin',
-    },
-];
+async function getData(url) {
+    const response = await fetch(url, {
+        method: 'GET',
+        mode: 'cors',
+        cache: 'no-cache'
+    });
+    return {
+        "statusOk": response.ok,
+        "data": await response.json()
+    };
+}
 
 class Recommendation extends React.Component {
+    componentDidMount() {
+        if (this.state.userId !== null && this.state.userId !== undefined && this.state.userId !== "") {
+            this.getRecommendationData();
+        } else {
+            message.error("Please Login First!");
+        }
+    }
+
+    constructor(props) {
+        super(props);
+        this.state = {
+            recommendationData: null,
+            previous: "",
+            userId: localStorage.getItem("userId")
+        }
+        this.getRecommendationData = this.getRecommendationData.bind(this);
+        this.getAnotherRecommendation = this.getAnotherRecommendation.bind(this);
+    }
+
+    getRecommendationData() {
+        getData("https://jdxo4zd1i6.execute-api.us-east-1.amazonaws.com/test/recommendation/" + this.state.userId)
+            .then(data => {
+            // console.log(data);
+            const message = data.data.message;
+            if (!data.statusOk) {
+                throw new Error(message);
+            }
+            this.setState({recommendationData: data.data.music});
+            this.setState({previous: data.data.previous});
+        }).catch((error) => {
+            console.error('Error:', error);
+            message.error(error.message);
+        });
+    }
+
+    getAnotherRecommendation() {
+        getData("https://jdxo4zd1i6.execute-api.us-east-1.amazonaws.com/test/recommendation/" + this.state.userId +
+            "?previous=" + this.state.recommendationData.previous).then(data => {
+            // console.log(data);
+            const message = data.data.message;
+            if (!data.statusOk) {
+                throw new Error(message);
+            }
+            this.setState({recommendationData: data.data.music});
+            this.setState({previous: data.data.previous});
+        }).catch((error) => {
+            console.error('Error:', error);
+            message.error(error.message);
+        });
+    }
+
     render() {
         return (
             <Layout style={{height:"100vh"}}>
@@ -33,27 +77,29 @@ class Recommendation extends React.Component {
                     <Navigator deafultSelectedKey={"recom"}/>
                 </Header>
                 <Content className="site-layout" style={{minHeight: 200, padding: '0 50px', marginTop: 50}}>
-                    <Row justify={"space-around"} align={"middle"} style={{marginTop: 50}}>
+                    {this.state.recommendationData === null && <Spin style={{marginTop: 100}}/>}
+                    {this.state.recommendationData !== null && <Row justify={"space-around"} align={"middle"} style={{marginTop: 50}}>
                         <Col span={16}>
                             <List
                                 bordered={false}
-                                dataSource={data}
+                                dataSource={this.state.recommendationData}
                                 size={"large"}
                                 renderItem={item => (
                                     <List.Item>
                                         <Card hoverable={false} style={{ width: '100%' }}>
                                             <Link to="/detail">
-                                                <Title level={4}>{item.music + ' - ' + item.artist}</Title>
+                                                <Title level={4}>{item.musicName + ' - ' + item.artistName}</Title>
                                             </Link>
                                         </Card>
                                     </List.Item>
                                 )}
                             />
-                            <Button style={{float: "left", marginTop: 20}} size={"large"}>
+                            <Button style={{float: "left", marginTop: 20}} size={"large"}
+                                    onClick={this.getAnotherRecommendation}>
                                 Generate Another Set
                             </Button>
                         </Col>
-                    </Row>
+                    </Row>}
 
                 </Content>
                 <Footer style={{marginTop: 100, textAlign: 'center'}}>

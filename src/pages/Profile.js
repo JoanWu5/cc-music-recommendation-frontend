@@ -1,26 +1,61 @@
 import React from 'react';
 import Navigator from "./Navigator";
-import {Layout, Row, Col, Button, Menu, Form, Input, Typography, Modal} from "antd";
+import {Layout, Row, Col, Button, Menu, Form, Input, Typography, message, Spin} from "antd";
 
 const { Header, Content, Footer, Sider } = Layout;
 const { Title } = Typography
 
-const onFinish = (values) => {
-    console.log('Success:', values);
-};
+async function submitForm(url, data) {
+    const response = await fetch(url, {
+        method: 'PUT',
+        mode: 'cors',
+        cache: 'no-cache',
+        body: JSON.stringify(data)
+    });
+    return {
+        "statusOk": response.ok,
+        "data": await response.json()
+    };
+}
 
 const onFinishFailed = (errorInfo) => {
     console.log('Failed:', errorInfo);
 };
 
-function forgetSuccess() {
-    Modal.success({
-        content: 'We have sent an email to your email address to help you find your password, please check!',
-    });
-}
-
 
 class Profile extends React.Component {
+    componentDidMount() {
+        if (this.state.userId === null || this.state.userId === undefined || this.state.userId === "") {
+            message.error("Please Login First!");
+        }
+    }
+
+    constructor(props) {
+        super(props);
+        this.state = {
+            userId: localStorage.getItem("userId")
+        }
+        this.onFinish = this.onFinish.bind(this);
+    }
+
+    onFinish = (values) => {
+        values["forget"] = false;
+        console.log('Success:', values);
+        // console.log(userId)
+        submitForm("https://jdxo4zd1i6.execute-api.us-east-1.amazonaws.com/test/password/" + this.state.userId, values)
+            .then(data => {
+                console.log(data);
+                const dataMessage = data.data.message;
+                if (!data.statusOk) {
+                    throw new Error(dataMessage);
+                }
+                message.success(dataMessage);
+            }).catch((error) => {
+            console.error('Error:', error.message);
+            message.error(error.message);
+        });
+    }
+
     render() {
         return (
             <Layout style={{height:"100vh"}}>
@@ -35,16 +70,21 @@ class Profile extends React.Component {
                         </Menu>
                     </Sider>
                     <Content className="site-layout" style={{minHeight: 200, padding: '0 50px', marginTop: 80}}>
+                        {(this.state.userId === null || this.state.userId === undefined || this.state.userId === "") && <Spin style={{marginTop: 100}}/>}
+                        {this.state.userId !== null && this.state.userId !== undefined && this.state.userId !== "" && <div>
                         <Row justify="center" style={{marginTop: 100, minHeight: 50}}>
-                            <Typography><Title>Update Password</Title></Typography>
+                                <Typography><Title>Hi, {this.state.userId}</Title></Typography>
                         </Row>
-                        <Row justify={"space-around"} align={"middle"} style={{marginTop: 80}}>
+                        <Row justify="center" style={{ minHeight: 20}}>
+                            <Typography><Title level={2}>Update Password</Title></Typography>
+                        </Row>
+                        <Row justify={"space-around"} align={"middle"} style={{marginTop: 50}}>
                             <Col span={10}>
                                 <Form
                                     name="settingForm"
                                     layout="vertical"
                                     initialValues={{ remember: true }}
-                                    onFinish={onFinish}
+                                    onFinish={this.onFinish}
                                     onFinishFailed={onFinishFailed}
                                     autoComplete="off"
                                     size={"large"}
@@ -63,9 +103,6 @@ class Profile extends React.Component {
                                     >
                                         <Input.Password />
                                     </Form.Item>
-                                    <Form.Item wrapperCol={{ offset: 0, span: 2 }}>
-                                        <Button type="text" onClick={forgetSuccess}>Forget Old Password?</Button>
-                                    </Form.Item>
 
                                     <Form.Item wrapperCol={{ offset: 10, span: 3 }}>
                                         <Button type="primary" htmlType="submit">
@@ -75,6 +112,7 @@ class Profile extends React.Component {
                                 </Form>
                             </Col>
                         </Row>
+                        </div>}
                     </Content>
                 </Layout>
                 <Footer style={{textAlign: 'center'}}>

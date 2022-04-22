@@ -1,11 +1,52 @@
 import React from 'react';
 import Navigator from "./Navigator";
-import {Layout, Row, Col, Button, Form, Input} from "antd";
+import {Layout, Row, Col, Button, Form, Input, message} from "antd";
 
 const { Header, Content, Footer} = Layout;
 
+async function submitForm(url, data) {
+    const response = await fetch(url, {
+        method: 'PUT',
+        mode: 'cors',
+        cache: 'no-cache',
+        body: JSON.stringify(data)
+    });
+    return {
+        "statusOk": response.ok,
+        "data": await response.json()
+    };
+}
+
+const href = window.location.href;
+const params = href.split('?')[1];
+let userId = "";
+
+// Be sure url params exist
+if (params && params !== '') {
+    const result = params.split('&').reduce(function (res, item) {
+        const parts = item.split('=');
+        res[parts[0]] = parts[1];
+        return res;
+    }, {});
+    console.log(result);
+    userId = result["userId"];
+}
+
 const onFinish = (values) => {
+    values["forget"] = true;
     console.log('Success:', values);
+    console.log(userId)
+    submitForm("https://jdxo4zd1i6.execute-api.us-east-1.amazonaws.com/test/password/" + userId, values).then(data => {
+        // console.log(data);
+        const dataMessage = data.data.message;
+        if (!data.statusOk) {
+            throw new Error(dataMessage);
+        }
+        message.success(dataMessage);
+    }).catch((error) => {
+        console.error('Error:', error.message);
+        message.error(error.message);
+    });
 };
 
 const onFinishFailed = (errorInfo) => {

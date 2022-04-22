@@ -49,7 +49,7 @@ class Detail extends React.Component {
                                 style={{ width: 300 }}
                                 cover={<img alt="example" src={data.imageurl} />}
                             >
-                                <Meta title={data.music} description={data.artist} />
+                                <Meta title={data.music} description={data.artistName} />
                             </Card>
                             <Link to="/recommendation">
                                 <Button style={{float: "left", marginTop: 20}} size={"large"} type={"primary"}>

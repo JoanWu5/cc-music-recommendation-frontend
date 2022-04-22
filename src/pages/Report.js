@@ -1,7 +1,7 @@
 import React from 'react';
-import {Layout, Typography, Row, Col, Steps, Button, Checkbox, Divider} from "antd";
+import {Button, Checkbox, Col, Divider, Layout, message, Row, Spin, Steps, Typography} from "antd";
 import Navigator from "./Navigator";
-import { Pie, G2, Line } from '@ant-design/plots';
+import {G2, Line, Pie} from '@ant-design/plots';
 
 const { Header, Content, Footer } = Layout;
 const { Title, Text } = Typography;
@@ -9,310 +9,261 @@ const { Step } = Steps;
 
 const G = G2.getEngine('canvas');
 
-const languageData = [
-    {
-        type: 'English',
-        value: 0.75,
-    },
-    {
-        type: 'Chinese',
-        value: 0.1,
-    },
-    {
-        type: 'Japanese',
-        value: 0.1,
-    },
-    {
-        type: 'Other',
-        value: 0.05,
-    },
-];
+async function getData(url) {
+    const response = await fetch(url, {
+        method: 'GET',
+        mode: 'cors',
+        cache: 'no-cache'
+    });
+    return {
+        "statusOk": response.ok,
+        "data": await response.json()
+    };
+}
 
-const languageCfg = {
-    appendPadding: 10,
-    data: languageData,
-    angleField: 'value',
-    colorField: 'type',
-    radius: 0.75,
-    legend: false,
-    height: 150,
-    label: {
-        type: 'spider',
-        labelHeight: 40,
-        formatter: (data, mappingData) => {
-            const group = new G.Group({});
-            group.addShape({
-                type: 'circle',
-                attrs: {
-                    x: 0,
-                    y: 0,
-                    width: 40,
-                    height: 50,
-                    r: 5,
-                    fill: mappingData.color,
-                },
-            });
-            group.addShape({
-                type: 'text',
-                attrs: {
-                    x: 10,
-                    y: 8,
-                    text: `${data.type}`,
-                    fill: mappingData.color,
-                },
-            });
-            group.addShape({
-                type: 'text',
-                attrs: {
-                    x: 0,
-                    y: 25,
-                    text: `${data.percent * 100}%`,
-                    fill: 'rgba(0, 0, 0, 0.65)',
-                    fontWeight: 700,
-                },
-            });
-            return group;
+function getLanguageCfg(languageData) {
+    return {
+        appendPadding: 10,
+        data: languageData,
+        angleField: 'value',
+        colorField: 'type',
+        radius: 0.75,
+        legend: false,
+        height: 150,
+        label: {
+            type: 'spider',
+            labelHeight: 40,
+            formatter: (data, mappingData) => {
+                const group = new G.Group({});
+                group.addShape({
+                    type: 'circle',
+                    attrs: {
+                        x: 0,
+                        y: 0,
+                        width: 40,
+                        height: 50,
+                        r: 5,
+                        fill: mappingData.color,
+                    },
+                });
+                group.addShape({
+                    type: 'text',
+                    attrs: {
+                        x: 10,
+                        y: 8,
+                        text: `${data.type}`,
+                        fill: mappingData.color,
+                    },
+                });
+                group.addShape({
+                    type: 'text',
+                    attrs: {
+                        x: 0,
+                        y: 25,
+                        text: `${data.percent * 100}%`,
+                        fill: 'rgba(0, 0, 0, 0.65)',
+                        fontWeight: 700,
+                    },
+                });
+                return group;
+            },
         },
-    },
-    interactions: [
-        {
-            type: 'element-selected',
-        },
-        {
-            type: 'element-active',
-        },
-    ],
-};
-
-const loudnessData = [
-    {
-        "timePeriod": "30",
-        "value": 1
-    },
-    {
-        "timePeriod": "40",
-        "value": 2
-    },
-    {
-        "timePeriod": "50",
-        "value": 0.5
+        interactions: [
+            {
+                type: 'element-selected',
+            },
+            {
+                type: 'element-active',
+            },
+        ],
     }
-]
+}
 
-const loudnessCfg = {
-    data: loudnessData,
-    xField: 'timePeriod',
-    yField: 'value',
-    xAxis: {
-        range: [0, 1],
-    },
-    height: 150,
-    width: 200,
-    autoFit: false,
-    smooth: true,
-};
-
-const releaseData = [
-    {
-        "timePeriod": "80",
-        "value": 0.5
-    },
-    {
-        "timePeriod": "90",
-        "value": 2
-    },
-    {
-        "timePeriod": "95",
-        "value": 1
-    },
-    {
-        "timePeriod": "00",
-        "value": 0.5
+function getReleaseCfg(releaseData) {
+    return {
+        data: releaseData,
+        xField: 'timePeriod',
+        yField: 'value',
+        xAxis: {
+            range: [0, 1],
+        },
+        height: 100,
+        width: 300,
+        autoFit: false,
+        smooth: true,
     }
-]
+}
 
-const releaseCfg = {
-    data: releaseData,
-    xField: 'timePeriod',
-    yField: 'value',
-    xAxis: {
-        range: [0, 1],
-    },
-    height: 100,
-    width: 300,
-    autoFit: false,
-    smooth: true,
-};
+function getKeyDescription(key) {
+    let description = {
+        "hasKey": true,
+        "range": null,
+        "favor": "Normal"
+    }
+    if (key === -1) {
+        description.hasKey = true;
+        return description;
+    }
+    if (key <= 2) {
+        description.range = "C~D";
+        description.favor = "Low";
+    } else if (key <= 4) {
+        description.range = "D~E";
+        description.favor = "Low";
+    } else if (key <= 5) {
+        description.range = "E~F";
+    } else if (key <= 7) {
+        description.range = "F~G";
+    } else if (key <= 9) {
+        description.range = "G~A";
+        description.favor = "High";
+    } else if (key <= 11) {
+        description.range = "A~C";
+        description.favor = "High";
+    }
+    return description;
+}
 
-const keyData = [
-    {
-        type: 'A-B',
-        value: 0.1,
-    },
-    {
-        type: 'C-D',
-        value: 0.5,
-    },
-    {
-        type: 'E-F',
-        value: 0.2,
-    },
-    {
-        type: 'Other',
-        value: 0.2,
-    },
-];
+function getAcousticnessDescription(acousticness) {
+    let description = {
+        "Acoustic": false
+    }
+    if (acousticness >= 0.8) {
+        description.Acoustic = true;
+    }
+    return description;
+}
 
-const keyCfg = {
-    appendPadding: 10,
-    data: keyData,
-    angleField: 'value',
-    colorField: 'type',
-    radius: 0.75,
-    legend: false,
-    height: 200,
-    label: {
-        type: 'spider',
-        labelHeight: 40,
-        formatter: (data, mappingData) => {
-            const group = new G.Group({});
-            group.addShape({
-                type: 'circle',
-                attrs: {
-                    x: 0,
-                    y: 0,
-                    width: 40,
-                    height: 50,
-                    r: 5,
-                    fill: mappingData.color,
-                },
-            });
-            group.addShape({
-                type: 'text',
-                attrs: {
-                    x: 10,
-                    y: 8,
-                    text: `${data.type}`,
-                    fill: mappingData.color,
-                },
-            });
-            group.addShape({
-                type: 'text',
-                attrs: {
-                    x: 0,
-                    y: 25,
-                    text: `${data.percent * 100}%`,
-                    fill: 'rgba(0, 0, 0, 0.65)',
-                    fontWeight: 700,
-                },
-            });
-            return group;
-        },
-    },
-    interactions: [
-        {
-            type: 'element-selected',
-        },
-        {
-            type: 'element-active',
-        },
-    ],
-};
+function getDanceabilityDescription(danceability) {
+    let description = {
+        "Danceability": false,
+    }
+    if (danceability >= 0.8) {
+        description.Danceability = true;
+    }
+    return description;
+}
+
+function getEnergyDescription(energy) {
+    let description = {
+        "Passionate": false
+    }
+    if (energy >= 0.8) {
+        description.Passionate = true;
+    }
+    return description;
+}
+
+function getLivenessDescription(liveness) {
+    let description = {
+        "Live": false
+    }
+    if (liveness >= 0.8) {
+        description.Live = true;
+    }
+    return description;
+}
+
+function getSpeechinessDescription(speechiness) {
+    let description = {
+        "speech": false,
+        "rap": false,
+    }
+    if (speechiness >= 0.66) {
+        description.speech = true;
+    } else if (speechiness >= 0.33) {
+        description.rap = true;
+    }
+    return description;
+}
+
+function getValenceDescription(valence) {
+    let description = {
+        "mood": "normal"
+    }
+    if (valence >= 0.66) {
+        description.mood = "cheerful";
+    } else if (valence <= 0.33) {
+        description.mood = "depressed";
+    }
+    return description;
+}
+
+function getMajorLanguage(languageList) {
+    let majorLanguage = ""
+    let maxValue = 0
+    for (const language of languageList) {
+        if (language.value > maxValue) {
+            maxValue = language.value;
+            majorLanguage = language.type;
+        }
+    }
+    return majorLanguage;
+}
+
+function getReleaseDescription(releaseList) {
+    let averageYear = 0;
+    const count = releaseList.length;
+    const nostalgicYear = 2022 - 60;
+    let description = {
+        "Nostalgic": false,
+    }
+
+    for (const release of releaseList) {
+        averageYear += parseInt(release.timePeriod) * release.value;
+    }
+    averageYear = averageYear/count;
+    if (averageYear <= nostalgicYear) {
+        description.Nostalgic = true;
+    }
+    return description;
+}
 
 function checkboxOnChange(checkedValues) {
     console.log('checked = ', checkedValues);
 }
 
-const options = [
-    { label: 'English', value: 'English' },
-    { label: 'Nostalgic', value: 'Nostalgic' },
-    { label: 'Loud', value: 'Loud' },
-    { label: 'High-key', value: 'High-key' },
-    { label: 'Dance', value: 'Dance' },
-    { label: 'Passionate', value: 'Passionate' },
-    { label: 'Acoustic', value: 'Acoustic' }
-];
-
-const steps = [
-    {
-        title: 'General Report',
-        content:
-            <Typography>
-                <Row justify="center" align={"middle"} style={{marginTop: 20, minHeight: 30}}>
-                    <Col span={10}><Title level={4}>Most of the songs you like are in </Title></Col>
-                    <Col span={4}><Title level={2} type={"danger"}><b>English</b></Title></Col>
-                </Row>
-                <Row justify="left" align={"middle"} style={{minHeight: 30}}>
-                    <Col span={4}><Title level={3}>You have a </Title></Col>
-                    <Col span={6}><Title level={2} type={"warning"}><b>Nostalgic</b></Title></Col>
-                    <Col span={2}><Title level={3}>soul</Title></Col>
-                </Row>
-                <Row justify="center" align={"middle"} style={{minHeight: 30}}>
-                    <Col span={4}><Title level={3}>You are so </Title></Col>
-                    <Col span={6}><Title level={2} type={"success"}><b>Passionate</b></Title></Col>
-                    <Col span={10}><Title level={3}>, you enjoy loudness between</Title></Col>
-                    <Col span={4}><Title level={3} type={"success"}><b>50~70dB</b></Title></Col>
-                </Row>
-                <Row justify="left" align={"middle"} style={{minHeight: 30}}>
-                    <Col span={6}><Title level={3}>You are such a </Title></Col>
-                    <Col span={4}><Title level={2} type={"success"}><b>High-key</b></Title></Col>
-                    <Col span={10}><Title level={3}>person, you enjoy Keys between</Title></Col>
-                    <Col span={2}><Title level={2} type={"success"}><b>C~D</b></Title></Col>
-                </Row>
-                <Row justify="center" align={"middle"} style={{minHeight: 30}}>
-                    <Col span={10}><Title level={3}>Most song you like has high</Title></Col>
-                    <Col span={8}><Title level={2} type={"warning"}><b>danceability</b></Title></Col>
-                </Row>
-                <Row justify="center" align={"middle"} style={{minHeight: 30}}>
-                    <Col span={6}><Title level={3}>You're an </Title></Col>
-                    <Col span={4}><Title level={2} type={"danger"}><b>acoustic</b></Title></Col>
-                    <Col span={2}><Title level={3}>lover</Title></Col>
-                </Row>
-            </Typography>
-    },
-    {
-        title: 'Full Data Report',
-        content:
-        <div className="site-layout-background" style={{minHeight: 200}}>
-            <Row justify={"center"} align={"middle"}>
-                <Col span={12}>
-                    <Line {...releaseCfg}/>
-                    <Text>Release</Text>
-                </Col>
-                <Col span={12}>
-                    <Pie {...keyCfg} />
-                    <Text>Key</Text>
-                </Col>
-            </Row>
-            <Row justify={"center"} align={"middle"}>
-                <Col span={12}>
-                    <Pie {...languageCfg} />
-                    <Text>Language</Text>
-                </Col>
-                <Col span={12}>
-                    <Line {...loudnessCfg}/>
-                    <Text>Loudness</Text>
-                </Col>
-            </Row>
-            <Row justify={"center"} align={"middle"} style={{marginTop: 20}} >
-                <Col span={4}><Text>Acoustic Level:</Text></Col>
-                <Col span={4}><Title level={2} type={"danger"}><b>95%</b></Title></Col>
-                <Col span={4}><Text>Danceability:</Text></Col>
-                <Col span={4}><Title level={2} type={"warning"}><b>95%</b></Title></Col>
-            </Row>
-        </div>
-    },
-];
-
 class Report extends React.Component {
+    componentDidMount() {
+        if (this.state.userId !== null && this.state.userId !== undefined && this.state.userId !== "") {
+            this.getReportData();
+            if (this.state.reportData !== null) {
+                this.setState({languageData: this.getLanguageData(this.state.reportData.language)});
+                this.setState({releaseData: this.getReleaseData(this.state.reportData.release)});
+                this.setState({steps: this.getSteps()});
+            }
+        } else {
+            message.error("Please Login First!");
+        }
+    }
+
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        // Typical usage (don't forget to compare props):
+        if (this.state.reportData !== prevState.reportData) {
+            this.setState({languageData: this.getLanguageData(this.state.reportData.language)});
+            this.setState({releaseData: this.getReleaseData(this.state.reportData.release)});
+            this.setState({steps: this.getSteps()});
+        }
+    }
+
     constructor(props) {
         super(props);
         this.state = {
-            current: 0
+            current: 0,
+            reportData: null,
+            languageData: [],
+            releaseData: [],
+            steps: [],
+            options: [],
+            userId: localStorage.getItem("userId")
         }
         this.next = this.next.bind(this);
         this.previous = this.previous.bind(this);
         this.ShowCheckbox = this.ShowCheckbox.bind(this);
+        this.getReportData = this.getReportData.bind(this);
+        this.getSteps = this.getSteps.bind(this);
+        this.getLanguageData = this.getLanguageData.bind(this);
+        this.getReleaseData = this.getReleaseData.bind(this);
     }
 
     next() {
@@ -329,7 +280,7 @@ class Report extends React.Component {
                 <Divider style={{marginTop: 80}}/>
                 <Row align={"middle"} justify={"center"}>
                     <Col span={10}>
-                        <Checkbox.Group options={options} defaultValue={['Passionate', 'Nostalgic']}
+                        <Checkbox.Group options={this.state.options} defaultValue={['Passionate', 'Nostalgic']}
                                         onChange={checkboxOnChange}/>
                     </Col>
                     <Col span={4}>
@@ -340,6 +291,234 @@ class Report extends React.Component {
         }
     }
 
+    getReportData() {
+        getData("https://jdxo4zd1i6.execute-api.us-east-1.amazonaws.com/test/report/" + this.state.userId)
+            .then(data => {
+            // console.log(data);
+            const message = data.data.message;
+            if (!data.statusOk) {
+                throw new Error(message);
+            }
+            this.setState({reportData: data.data});
+            this.setState({languageData: this.getLanguageData(data.data.language)});
+            this.setState({releaseData: this.getReleaseData(data.data.release)});
+            this.setState({steps: this.getSteps()})
+        }).catch((error) => {
+            console.error('Error:', error);
+            message.error(error.message);
+        });
+    }
+
+    getLanguageData(language) {
+        let languageList = [];
+        for (const m in language) {
+            languageList.push({
+                "type": m,
+                "value": language[m]
+            })
+        }
+        return languageList
+    }
+
+    getReleaseData(release) {
+        let releaseList = [];
+        for (const m in release) {
+            releaseList.push({
+                "timePeriod": m,
+                "value": release[m]
+            })
+        }
+        return releaseList
+    }
+
+    getSteps() {
+        if (this.state.reportData === null) {
+            return []
+        }
+        // console.log(this.state.reportData);
+        const majorLanguage = getMajorLanguage(this.state.languageData);
+        const releaseDescription = getReleaseDescription(this.state.releaseData);
+        const keyDescription = getKeyDescription(this.state.reportData.key);
+        const acousticnessDescription = getAcousticnessDescription(this.state.reportData.acousticness);
+        const danceabilityDescription = getDanceabilityDescription(this.state.reportData.danceability);
+        const energyDescription = getEnergyDescription(this.state.reportData.energy);
+        const livenessDescription = getLivenessDescription(this.state.reportData.liveness);
+        const speechinessDescription = getSpeechinessDescription(this.state.reportData.speechiness);
+        const valenceDescription = getValenceDescription(this.state.reportData.valence);
+        const releaseCfg = getReleaseCfg(this.state.releaseData);
+        const languageCfg = getLanguageCfg(this.state.languageData);
+
+        let checkboxOptions = [];
+        checkboxOptions.push({
+            "label": majorLanguage,
+            "value": majorLanguage
+        })
+
+        if (releaseDescription.Nostalgic) {
+            checkboxOptions.push({
+                "label": "Nostalgic",
+                "value": "Nostalgic"
+            })
+        }
+
+        if (energyDescription.Passionate) {
+            checkboxOptions.push({
+                "label": "Passionate",
+                "value": "Passionate"
+            })
+        }
+
+        if (keyDescription.hasKey && keyDescription.favor !== "Normal") {
+            checkboxOptions.push({
+                "label": keyDescription.favor + "-Key",
+                "value": keyDescription.favor + "-Key"
+            })
+        }
+
+        if (valenceDescription.mood !== "normal") {
+            checkboxOptions.push({
+                "label": valenceDescription.mood + "music",
+                "value": valenceDescription.mood + "music"
+            })
+        }
+
+        if (danceabilityDescription.Danceability) {
+            checkboxOptions.push({
+                "label": "Danceability",
+                "value": "Danceability"
+            })
+        }
+
+        if (speechinessDescription.rap) {
+            checkboxOptions.push({
+                "label": "RAP",
+                "value": "RAP"
+            })
+        }
+
+        if (acousticnessDescription.Acoustic) {
+            checkboxOptions.push({
+                "label": "Acoustic",
+                "value": "Acoustic"
+            })
+        }
+
+        if (livenessDescription.Live) {
+            checkboxOptions.push({
+                "label": "Live",
+                "value": "Live"
+            })
+        }
+
+        this.setState({options: checkboxOptions})
+
+        return [
+            {
+                title: 'General Report',
+                content:
+                    <Typography>
+                        <Row justify="center" align={"middle"} style={{marginTop: 20, minHeight: 30}}>
+                            <Col span={10}><Title level={4}>Most of the songs you like are in </Title></Col>
+                            <Col span={4}><Title level={2} type={"danger"}><b>{majorLanguage}</b></Title></Col>
+                        </Row>
+                        {releaseDescription.Nostalgic && (
+                            <Row justify="left" align={"middle"} style={{minHeight: 30}}>
+                                <Col span={4}><Title level={3}>You have a </Title></Col>
+                                <Col span={6}><Title level={2} type={"warning"}><b>Nostalgic</b></Title></Col>
+                                <Col span={2}><Title level={3}>soul</Title></Col>
+                            </Row>
+                        )}
+                        {energyDescription.Passionate && (
+                            <Row justify="center" align={"middle"} style={{minHeight: 30}}>
+                                <Col span={4}><Title level={3}>You are so </Title></Col>
+                                <Col span={6}><Title level={2} type={"success"}><b>Passionate</b></Title></Col>
+                            </Row>
+                        )}
+                        {keyDescription.hasKey && keyDescription.favor !== "Normal" && (
+                            <Row justify="left" align={"middle"} style={{minHeight: 30}}>
+                                <Col span={6}><Title level={3}>You are such a </Title></Col>
+                                <Col span={4}><Title level={2} type={"success"}><b>{keyDescription.favor}-key</b></Title></Col>
+                                <Col span={10}><Title level={3}>person, you enjoy Keys between</Title></Col>
+                                <Col span={2}><Title level={2} type={"success"}><b>{keyDescription.range}</b></Title></Col>
+                            </Row>
+                        )}
+                        {valenceDescription.mood !== "normal" && (
+                            <Row justify="center" align={"middle"} style={{minHeight: 30}}>
+                                <Col span={4}><Title level={3}>Most songs you like are </Title></Col>
+                                <Col span={6}><Title level={2} type={"success"}><b>valenceDescription.mood</b></Title></Col>
+                            </Row>
+                        )}
+                        {danceabilityDescription.Danceability && (
+                            <Row justify="center" align={"middle"} style={{minHeight: 30}}>
+                                <Col span={10}><Title level={3}>Most songs you like has high</Title></Col>
+                                <Col span={8}><Title level={2} type={"warning"}><b>danceability</b></Title></Col>
+                            </Row>
+                        )}
+                        {speechinessDescription.rap && (
+                            <Row justify="center" align={"middle"} style={{minHeight: 30}}>
+                                <Col span={10}><Title level={3}>Most songs you like are</Title></Col>
+                                <Col span={8}><Title level={2} type={"warning"}><b>RAP</b></Title></Col>
+                            </Row>
+                        )}
+                        {acousticnessDescription.Acoustic && (
+                            <Row justify="center" align={"middle"} style={{minHeight: 30}}>
+                                <Col span={6}><Title level={3}>You're an </Title></Col>
+                                <Col span={4}><Title level={2} type={"danger"}><b>acoustic</b></Title></Col>
+                                <Col span={2}><Title level={3}>lover</Title></Col>
+                            </Row>
+                        )}
+                        {livenessDescription.Live && (
+                            <Row justify="center" align={"middle"} style={{minHeight: 30}}>
+                                <Col span={6}><Title level={3}>You enjoy the </Title></Col>
+                                <Col span={4}><Title level={2} type={"danger"}><b>Live</b></Title></Col>
+                                <Col span={2}><Title level={3}>music</Title></Col>
+                            </Row>
+                        )}
+                    </Typography>
+            },
+            {
+                title: 'Full Data Report',
+                content:
+                    <div className="site-layout-background" style={{minHeight: 200}}>
+                        <Row justify={"center"} align={"middle"}>
+                            <Col span={12}>
+                                <Line {...releaseCfg}/>
+                                <Text>Release</Text>
+                            </Col>
+                            <Col span={12}>
+                                <Pie {...languageCfg} />
+                                <Text>Language</Text>
+                            </Col>
+                        </Row>
+                        <Row justify={"center"} align={"middle"} style={{marginTop: 20}}>
+                            <Col span={4}><Text>Acoustic Level:</Text></Col>
+                            <Col span={4}><Title level={2} type={"danger"}><b>{this.state.reportData.acousticness * 100}%</b></Title></Col>
+                            <Col span={4}><Text>Danceability:</Text></Col>
+                            <Col span={4}><Title level={2} type={"warning"}><b>{this.state.reportData.danceability * 100}%</b></Title></Col>
+                        </Row>
+                        <Row justify={"center"} align={"middle"} style={{marginTop: 20}}>
+                            <Col span={4}><Text>Liveness Level:</Text></Col>
+                            <Col span={4}><Title level={2} type={"danger"}><b>{this.state.reportData.liveness * 100}%</b></Title></Col>
+                            <Col span={4}><Text>Loudness:</Text></Col>
+                            <Col span={4}><Title level={2} type={"warning"}><b>{this.state.reportData.loudness}dB</b></Title></Col>
+                        </Row>
+                        <Row justify={"center"} align={"middle"} style={{marginTop: 20}}>
+                            <Col span={4}><Text>Speechiness Level:</Text></Col>
+                            <Col span={4}><Title level={2} type={"danger"}><b>{this.state.reportData.speechiness * 100}%</b></Title></Col>
+                            <Col span={4}><Text>Valence:</Text></Col>
+                            <Col span={4}><Title level={2} type={"warning"}><b>{this.state.reportData.valence}</b></Title></Col>
+                        </Row>
+                        <Row justify={"center"} align={"middle"} style={{marginTop: 20}}>
+                            <Col span={4}><Text>Energetic Level:</Text></Col>
+                            <Col span={4}><Title level={2} type={"danger"}><b>{this.state.reportData.energy * 100}%</b></Title></Col>
+                            <Col span={4}><Text>Key:</Text></Col>
+                            <Col span={4}><Title level={2} type={"warning"}><b>{this.state.reportData.key}</b></Title></Col>
+                        </Row>
+                    </div>
+            },
+        ]
+    }
+
     render() {
         return (
             <Layout style={{height:"100vh"}}>
@@ -347,27 +526,30 @@ class Report extends React.Component {
                     <Navigator deafultSelectedKey={"report"}/>
                 </Header>
                 <Content className="site-layout" style={{minHeight: 300, padding: '0 50px', marginTop: 80}}>
-                    <Col span={16} offset={4}>
-                        <Steps current={this.state.current} style={{marginTop: 20}}>
-                            {steps.map(item => (
-                                <Step key={item.title} title={item.title} />
-                            ))}
-                        </Steps>
-                        <div className="steps-content">{steps[this.state.current].content}</div>
-                        <div className="steps-action">
-                            {this.state.current < steps.length - 1 && (
-                                <Button type="primary" size={"large"} onClick={() => this.next()} style={{float: "right"}}>
-                                    See Full Data Report
-                                </Button>
-                            )}
-                            {this.state.current > 0 && (
-                                <Button size={"large"} style={{ float: "right" }} onClick={() => this.previous()}>
-                                    See General Report
-                                </Button>
-                            )}
-                        </div>
-                    </Col>
-                    <this.ShowCheckbox />
+                    {(this.state.reportData === null || this.state.steps.length === 0) && <Spin style={{marginTop: 100}}/>}
+                    {this.state.reportData !== null && this.state.steps.length !== 0 && (<div>
+                        <Col span={16} offset={4}>
+                            <Steps current={this.state.current} style={{marginTop: 20}}>
+                                {this.state.steps.map(item => (
+                                    <Step key={item.title} title={item.title} />
+                                ))}
+                            </Steps>
+                            <div className="steps-content">{this.state.steps[this.state.current].content}</div>
+                            <div className="steps-action">
+                                {this.state.current < this.state.steps.length - 1 && (
+                                    <Button type="primary" size={"large"} onClick={() => this.next()} style={{float: "right"}}>
+                                        See Full Data Report
+                                    </Button>
+                                )}
+                                {this.state.current > 0 && (
+                                    <Button size={"large"} style={{ float: "right" }} onClick={() => this.previous()}>
+                                        See General Report
+                                    </Button>
+                                )}
+                            </div>
+                        </Col>
+                        <this.ShowCheckbox />
+                    </div>)}
                 </Content>
                 <Footer style={{textAlign: 'center', marginTop: 80}}>
                      CC6998©2022 Created by Chen Li/Chaofan Wang/Danmei Wu/Zipei Jiang

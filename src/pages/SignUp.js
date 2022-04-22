@@ -1,6 +1,6 @@
 import React from 'react';
-import {Layout, Row, Col, Menu, Button, Form, Input, Typography} from "antd";
-import { Link } from "react-router-dom";
+import {Layout, Row, Col, Menu, Button, Form, Input, Typography, message} from "antd";
+import {Link, Navigate} from "react-router-dom";
 import AliIconFont from "./Icon";
 
 const {Header, Content, Footer} = Layout;
@@ -8,18 +8,54 @@ const { Title} = Typography;
 
 const IconFont = AliIconFont;
 
-const onFinish = (values) => {
-    console.log('Success:', values);
-};
+async function submitForm(url, data) {
+    const response = await fetch(url, {
+        method: 'POST',
+        mode: 'cors',
+        cache: 'no-cache',
+        body: JSON.stringify(data)
+    });
+    return {
+        "statusOk": response.ok,
+        "data": await response.json()
+    };
+}
 
 const onFinishFailed = (errorInfo) => {
     console.log('Failed:', errorInfo);
 };
 
 class SignUp extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            finish: false,
+        }
+    }
+
+    onFinish = (values) => {
+        console.log('Success:', values);
+        submitForm("https://jdxo4zd1i6.execute-api.us-east-1.amazonaws.com/test/signup", values).then(data => {
+            // console.log(data);
+            const message = data.data.message;
+            if (!data.statusOk) {
+                throw new Error(message);
+            }
+            const userId = data.data.userId;
+            console.log(userId)
+            localStorage.setItem("userId", userId);
+            this.setState({finish: true});
+            // window.open("/#/", "_self");
+        }).catch((error) => {
+            console.error('Error:', error.message);
+            message.error(error.message);
+        });
+    };
+
     render() {
         return (
             <Layout style={{height:"100vh"}}>
+                {this.state.finish && <Navigate to="/" replace={true}/>}
                 <Header style={{position: 'fixed', zIndex: 1, width: '100%', height: '80px'}}>
                     <Row justify='space-between'>
                         <Col>
@@ -47,13 +83,13 @@ class SignUp extends React.Component {
                                 name="signUpForm"
                                 layout="vertical"
                                 initialValues={{ remember: true }}
-                                onFinish={onFinish}
+                                onFinish={this.onFinish}
                                 onFinishFailed={onFinishFailed}
                                 autoComplete="off"
                                 size={"large"}
                             >
                                 <Form.Item
-                                    label="Name"
+                                    label="Username"
                                     name="username"
                                     rules={[{ required: true, message: 'Please input your name!' }]}
                                 >
@@ -62,7 +98,7 @@ class SignUp extends React.Component {
                                 <Form.Item
                                     label="Email address"
                                     name="email"
-                                    rules={[{ required: true, message: 'Please input your email!' }]}
+                                    rules={[{ required: true, type: "email", message: 'Please input your email!' }]}
                                 >
                                     <Input />
                                 </Form.Item>
@@ -82,7 +118,6 @@ class SignUp extends React.Component {
                             </Form>
                         </Col>
                     </Row>
-
                 </Content>
                 <Footer style={{marginTop: 100, textAlign: 'center'}}>
                      CC6998©2022 Created by Chen Li/Chaofan Wang/Danmei Wu/Zipei Jiang

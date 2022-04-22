@@ -13,7 +13,7 @@ class Home extends React.Component {
         return (
             <Layout>
                 <Header style={{position: 'fixed', zIndex: 1, width: '100%', height: '80px'}}>
-                    <Navigator deafultSelectedKey={"recom"}/>
+                    <Navigator deafultSelectedKey={"home"}/>
                 </Header>
                 <Content className="site-layout" style={{padding: '0 50px', marginTop: 64}}>
                     <Row justify="center" style={{marginTop: 100}}>
