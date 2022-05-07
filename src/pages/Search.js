@@ -1,4 +1,4 @@
-import {Layout, Row, Col, Card, message, Spin, Space, Button} from 'antd';
+import {Layout, Row, Col, Card, message, Pagination, Spin, Space, Button} from 'antd';
 import React from 'react';
 import Navigator from "./Navigator";
 import AliIconFont from "./Icon";
@@ -6,6 +6,7 @@ import AliIconFont from "./Icon";
 const IconFont = AliIconFont;
 const {Header, Content, Footer} = Layout;
 const { Meta } = Card;
+
 const gridStyle = {
     width: '25%',
     padding: 10,
@@ -37,119 +38,90 @@ async function submitForm(method, url, data) {
     };
 }
 
-function interpretReportStatistics(reportData) {
-    let queryList = [];
-
-    if (reportData.key <= 4) {
-        queryList.push("max_key=4");
-    } else if (reportData.key >= 8) {
-        queryList.push("min_key=8");
-    }
-
-    if (reportData.acousticness >= 0.8) {
-        queryList.push("min_acousticness=0.8");
-    }
-
-    if (reportData.danceability >= 0.8) {
-        queryList.push("min_danceability=0.8");
-    }
-
-    if (reportData.energy >= 0.8) {
-        queryList.push("min_energy=0.8");
-    }
-
-    if (reportData.liveness >= 0.8) {
-        queryList.push("min_liveness=0.8");
-    }
-
-    if (reportData.speechiness >= 0.66) {
-        queryList.push("min_speechiness=0.66");
-    } else if (reportData.speechiness >= 0.33) {
-        queryList.push("min_speechiness=0.33");
-        queryList.push("max_speechiness=0.66");
-    }
-
-    if (reportData.valence >= 0.66) {
-        queryList.push("min_valence=0.66");
-    } else if (reportData.valence <= 0.33) {
-        queryList.push("max_speechiness=0.33");
-    }
-
-    if (queryList.length === 0) {
-        queryList.push("min_popularity=0.4");
-    }
-
-    return queryList.join(",");
-}
-
-class Home extends React.Component {
+class Search extends React.Component {
     componentDidMount() {
         this.setState({userId: localStorage.getItem("userId")});
         this.setState({isLoggedIn:
                 this.state.userId !== null && this.state.userId !== undefined && this.state.userId !== ""});
-        this.getMoreRecommendation();
+        if (this.state.params && this.state.params !== "") {
+            this.getQueryParams();
+        }
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
         // Typical usage (don't forget to compare props):
-        if (this.state.userId !== prevState.userId) {
-            this.setState({isLoggedIn:
-                    this.state.userId !== null && this.state.userId !== undefined && this.state.userId !== ""});
+        if (this.state.params !== prevState.params) {
+            this.getQueryParams();
         }
-
-        if (this.state.isLoggedIn !== prevState.isLoggedIn) {
-            this.getReportData();
-        }
-
-        if (this.state.reportData !== prevState.reportData) {
-            // console.log("change report data");
-            this.getStatistics();
-        }
-
-        if (this.state.query !== prevState.query) {
-            // console.log("change query data");
-            // console.log(this.state.query);
-            this.getMoreRecommendation();
+        if (this.state.query !== prevState.query || this.state.page !== prevState.page) {
+            this.onSearch();
         }
     }
 
     constructor(props) {
         super(props);
         this.state = {
-            userId: localStorage.getItem("userId"),
-            isLoggedIn: false,
-            recommendationData: null,
+            searchData: [],
+            searchCount: -1,
+            params: window.location.href.split('?')[1],
             query: "",
-            reportData: null
+            page: 1,
+            userId: localStorage.getItem("userId"),
+            isLoggedIn: false
         }
-        this.getReportData = this.getReportData.bind(this);
+        this.onSearch = this.onSearch.bind(this);
+        this.getQueryParams = this.getQueryParams.bind(this);
+        this.onChange = this.onChange.bind(this);
         this.showLikeIcon = this.showLikeIcon.bind(this);
         this.onLikeClick = this.onLikeClick.bind(this);
-        this.getMoreRecommendation = this.getMoreRecommendation.bind(this);
-        this.getStatistics = this.getStatistics.bind(this);
     }
 
-    getReportData() {
-        if (!this.state.isLoggedIn) {
-            this.setState({reportData: null});
+    onSearch() {
+        if (this.state.query === "") {
+            message.error("Please input the search content!");
             return;
         }
-        getData("https://jdxo4zd1i6.execute-api.us-east-1.amazonaws.com/test/report/" + this.state.userId)
+        // console.log(value);
+        getData("https://jdxo4zd1i6.execute-api.us-east-1.amazonaws.com/test/search?q=" + this.state.query +
+            "&page=" + this.state.page)
             .then(data => {
                 // console.log(data);
                 const message = data.data.message;
                 if (!data.statusOk) {
                     throw new Error(message);
                 }
-                this.setState({reportData: data.data});
+                this.setState({searchData: data.data.music});
+                this.setState({searchCount: data.data.count});
             }).catch((error) => {
             console.error('Error:', error);
             message.error(error.message);
         });
     }
 
+    getQueryParams() {
+        if (this.state.params && this.state.params !== '') {
+            const result = this.state.params.split('&').reduce(function (res, item) {
+                const parts = item.split('=');
+                res[parts[0]] = parts[1];
+                return res;
+            }, {});
+            console.log("query", result);
+            if ("q" in result){
+                this.setState({query: result["q"]});
+            }
+            if ("page" in result) {
+                this.setState({page: parseInt(result["page"])})
+            }
+        }
+    }
+
+    onChange(pageNumber) {
+        // console.log('Page: ', pageNumber);
+        this.setState({page: parseInt(pageNumber)});
+    }
+
     showLikeIcon(index) {
-        const like = this.state.recommendationData[index].like
+        const like = this.state.searchData[index].like
         if (like === 1) {
             return <IconFont type="icon-like" style={{fontSize: '40px', padding: '10px 10px 0px'}}/>;
         } else {
@@ -168,10 +140,11 @@ class Home extends React.Component {
             "music": [],
         }
 
-        // console.log(this.state.recommendationData[i].like);
+        // console.log(this.state.searchData[i].like);
+
         likeData.music.push({
-            musicId: this.state.recommendationData[i].musicId,
-            like: 1 - this.state.recommendationData[i].like
+            musicId: this.state.searchData[i].musicId,
+            like: 1 - this.state.searchData[i].like
         })
 
         submitForm("POST", "https://jdxo4zd1i6.execute-api.us-east-1.amazonaws.com/test/interest/" +
@@ -184,9 +157,9 @@ class Home extends React.Component {
                     throw new Error(dataMessage);
                 }
                 const item = parseInt(i);
-                let items = [...this.state.recommendationData];
+                let items = [...this.state.searchData];
                 items[item].like = 1 - items[item].like;
-                this.setState({recommendationData: items});
+                this.setState({searchData: items});
                 // message.success(dataMessage);
             }).catch((error) => {
             console.error('Error:', error);
@@ -194,49 +167,18 @@ class Home extends React.Component {
         });
     }
 
-    getMoreRecommendation() {
-        let url = "https://jdxo4zd1i6.execute-api.us-east-1.amazonaws.com/test/morerecom?";
-        if (this.state.isLoggedIn) {
-            url += "userId=" + this.state.userId + "&q=" + this.state.query
-        } else {
-            url += "q=" + this.state.query
-        }
-        getData(url)
-            .then(data => {
-                // console.log(data);
-                const message = data.data.message;
-                if (!data.statusOk) {
-                    throw new Error(message);
-                }
-                this.setState({recommendationData: data.data.music});
-            }).catch((error) => {
-            console.error('Error:', error);
-            message.error(error.message);
-        });
-    }
-
-    getStatistics() {
-        if (!this.state.isLoggedIn) {
-            this.setState({query: "min_popularity=0.4"});
-        } else {
-            if (this.state.reportData !== null) {
-                this.setState({query: interpretReportStatistics(this.state.reportData)});
-            }
-        }
-    }
-
     render() {
         return (
             <Layout>
                 <Header style={{position: 'fixed', zIndex: 1, width: '100%', height: '80px'}}>
-                    <Navigator deafultSelectedKey={"home"}/>
+                    <Navigator deafultSelectedKey={"search"}/>
                 </Header>
                 <Content className="site-layout" style={{padding: '0 50px', marginTop: 64, minHeight: "70vh"}}>
-                    {this.state.recommendationData === null && <Spin style={{marginTop: 100}}/>}
-                    {this.state.recommendationData !== null && <Row justify="center" style={{marginTop: 100}}>
+                    {this.state.searchCount === -1 && <Spin style={{marginTop: 100}}/>}
+                    {this.state.searchCount !== -1 && <Row justify="center" style={{marginTop: 50}}>
                         <Col span={20}>
                             <Card>
-                                {this.state.recommendationData.map((item, i) => (
+                                {this.state.searchData.map((item, i) => (
                                     <Card.Grid style={gridStyle} key={item.musicId}>
                                         <Card
                                             style={{ width: '100%', padding:10 }}
@@ -246,8 +188,8 @@ class Home extends React.Component {
                                             <Space align="center">
                                                 {this.state.isLoggedIn &&
                                                     <Button shape="circle" size="large"
-                                                            icon={this.showLikeIcon(i)}
-                                                            onClick={(e) => this.onLikeClick(i, e)}>
+                                                        icon={this.showLikeIcon(i)}
+                                                        onClick={(e) => this.onLikeClick(i, e)}>
                                                     </Button>
                                                 }
                                                 <video controls autoPlay={false}>
@@ -258,15 +200,20 @@ class Home extends React.Component {
                                     </Card.Grid>
                                 ))}
                             </Card>
+                            <Pagination style={{marginTop: 50}}
+                                showQuickJumper showSizeChanger={false}
+                                        pageSize={12}
+                                        defaultCurrent={1} total={this.state.searchCount}
+                                        onChange={this.onChange}/>
                         </Col>
                     </Row>}
                 </Content>
                 <Footer style={{marginTop: 100, textAlign: 'center'}}>
-                     CC6998©2022 Created by Chen Li/Chaofan Wang/Danmei Wu/Zipei Jiang
+                    CC6998©2022 Created by Chen Li/Chaofan Wang/Danmei Wu/Zipei Jiang
                 </Footer>
             </Layout>
         );
     }
 }
 
-export default Home;
+export default Search;

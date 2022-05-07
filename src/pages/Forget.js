@@ -28,8 +28,10 @@ if (params && params !== '') {
         res[parts[0]] = parts[1];
         return res;
     }, {});
-    console.log(result);
-    userId = result["userId"];
+    // console.log(result);
+    if ("userId" in result){
+        userId = result["userId"];
+    }
 }
 
 const onFinish = (values) => {

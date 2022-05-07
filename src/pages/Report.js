@@ -1,13 +1,12 @@
 import React from 'react';
 import {Button, Checkbox, Col, Divider, Layout, message, Row, Spin, Steps, Typography} from "antd";
 import Navigator from "./Navigator";
-import {G2, Line, Pie} from '@ant-design/plots';
+import {Line} from '@ant-design/plots';
+import {Navigate} from "react-router-dom";
 
 const { Header, Content, Footer } = Layout;
 const { Title, Text } = Typography;
 const { Step } = Steps;
-
-const G = G2.getEngine('canvas');
 
 async function getData(url) {
     const response = await fetch(url, {
@@ -19,64 +18,6 @@ async function getData(url) {
         "statusOk": response.ok,
         "data": await response.json()
     };
-}
-
-function getLanguageCfg(languageData) {
-    return {
-        appendPadding: 10,
-        data: languageData,
-        angleField: 'value',
-        colorField: 'type',
-        radius: 0.75,
-        legend: false,
-        height: 150,
-        label: {
-            type: 'spider',
-            labelHeight: 40,
-            formatter: (data, mappingData) => {
-                const group = new G.Group({});
-                group.addShape({
-                    type: 'circle',
-                    attrs: {
-                        x: 0,
-                        y: 0,
-                        width: 40,
-                        height: 50,
-                        r: 5,
-                        fill: mappingData.color,
-                    },
-                });
-                group.addShape({
-                    type: 'text',
-                    attrs: {
-                        x: 10,
-                        y: 8,
-                        text: `${data.type}`,
-                        fill: mappingData.color,
-                    },
-                });
-                group.addShape({
-                    type: 'text',
-                    attrs: {
-                        x: 0,
-                        y: 25,
-                        text: `${data.percent * 100}%`,
-                        fill: 'rgba(0, 0, 0, 0.65)',
-                        fontWeight: 700,
-                    },
-                });
-                return group;
-            },
-        },
-        interactions: [
-            {
-                type: 'element-selected',
-            },
-            {
-                type: 'element-active',
-            },
-        ],
-    }
 }
 
 function getReleaseCfg(releaseData) {
@@ -189,18 +130,6 @@ function getValenceDescription(valence) {
     return description;
 }
 
-function getMajorLanguage(languageList) {
-    let majorLanguage = ""
-    let maxValue = 0
-    for (const language of languageList) {
-        if (language.value > maxValue) {
-            maxValue = language.value;
-            majorLanguage = language.type;
-        }
-    }
-    return majorLanguage;
-}
-
 function getReleaseDescription(releaseList) {
     let averageYear = 0;
     const count = releaseList.length;
@@ -223,14 +152,59 @@ function checkboxOnChange(checkedValues) {
     console.log('checked = ', checkedValues);
 }
 
+function interpretReportStatistics(reportData) {
+    let queryList = [];
+
+    if (reportData.key <= 4) {
+        queryList.push("max_key=4");
+    } else if (reportData.key >= 8) {
+        queryList.push("min_key=8");
+    }
+
+    if (reportData.acousticness >= 0.8) {
+        queryList.push("min_acousticness=0.8");
+    }
+
+    if (reportData.danceability >= 0.8) {
+        queryList.push("min_danceability=0.8");
+    }
+
+    if (reportData.energy >= 0.8) {
+        queryList.push("min_energy=0.8");
+    }
+
+    if (reportData.liveness >= 0.8) {
+        queryList.push("min_liveness=0.8");
+    }
+
+    if (reportData.speechiness >= 0.66) {
+        queryList.push("min_speechiness=0.66");
+    } else if (reportData.speechiness >= 0.33) {
+        queryList.push("min_speechiness=0.33");
+        queryList.push("max_speechiness=0.66");
+    }
+
+    if (reportData.valence >= 0.66) {
+        queryList.push("min_valence=0.66");
+    } else if (reportData.valence <= 0.33) {
+        queryList.push("max_speechiness=0.33");
+    }
+
+    if (queryList.length === 0) {
+        queryList.push("min_popularity=0.4");
+    }
+
+    return queryList.join(",");
+}
+
 class Report extends React.Component {
     componentDidMount() {
         if (this.state.userId !== null && this.state.userId !== undefined && this.state.userId !== "") {
             this.getReportData();
             if (this.state.reportData !== null) {
-                this.setState({languageData: this.getLanguageData(this.state.reportData.language)});
                 this.setState({releaseData: this.getReleaseData(this.state.reportData.release)});
                 this.setState({steps: this.getSteps()});
+                this.getStatistics();
             }
         } else {
             message.error("Please Login First!");
@@ -240,9 +214,9 @@ class Report extends React.Component {
     componentDidUpdate(prevProps, prevState, snapshot) {
         // Typical usage (don't forget to compare props):
         if (this.state.reportData !== prevState.reportData) {
-            this.setState({languageData: this.getLanguageData(this.state.reportData.language)});
             this.setState({releaseData: this.getReleaseData(this.state.reportData.release)});
             this.setState({steps: this.getSteps()});
+            this.getStatistics();
         }
     }
 
@@ -251,19 +225,22 @@ class Report extends React.Component {
         this.state = {
             current: 0,
             reportData: null,
-            languageData: [],
             releaseData: [],
             steps: [],
             options: [],
-            userId: localStorage.getItem("userId")
+            userId: localStorage.getItem("userId"),
+            query: "",
+            moreRec: false,
+            recommendationData: null
         }
         this.next = this.next.bind(this);
         this.previous = this.previous.bind(this);
         this.ShowCheckbox = this.ShowCheckbox.bind(this);
         this.getReportData = this.getReportData.bind(this);
         this.getSteps = this.getSteps.bind(this);
-        this.getLanguageData = this.getLanguageData.bind(this);
         this.getReleaseData = this.getReleaseData.bind(this);
+        this.getMoreRecommendation = this.getMoreRecommendation.bind(this);
+        this.getStatistics = this.getStatistics.bind(this);
     }
 
     next() {
@@ -275,19 +252,45 @@ class Report extends React.Component {
     };
 
     ShowCheckbox() {
-        if (this.state.current === 0) {
+        if (this.state.current === 0 && this.state.options.length !== 0) {
             return <div>
                 <Divider style={{marginTop: 80}}/>
                 <Row align={"middle"} justify={"center"}>
                     <Col span={10}>
-                        <Checkbox.Group options={this.state.options} defaultValue={['Passionate', 'Nostalgic']}
+                        <Checkbox.Group options={this.state.options}
                                         onChange={checkboxOnChange}/>
                     </Col>
                     <Col span={4}>
-                        <Button size={"middle"}>Get More Selected Recommendation</Button>
+                        <Button size={"middle"} onClick={this.getMoreRecommendation}>
+                            Get More Selected Recommendation
+                        </Button>
                     </Col>
                 </Row>
             </div>;
+        }
+    }
+
+    getMoreRecommendation() {
+        let url = "https://jdxo4zd1i6.execute-api.us-east-1.amazonaws.com/test/morerecom?userId="
+            + this.state.userId + "&q=" + this.state.query;
+        getData(url)
+            .then(data => {
+                // console.log(data);
+                const message = data.data.message;
+                if (!data.statusOk) {
+                    throw new Error(message);
+                }
+                this.setState({moreRec: true});
+                this.setState({recommendationData: data.data.music});
+            }).catch((error) => {
+            console.error('Error:', error);
+            message.error(error.message);
+        });
+    }
+
+    getStatistics() {
+        if (this.state.reportData !== null) {
+            this.setState({query: interpretReportStatistics(this.state.reportData)});
         }
     }
 
@@ -300,7 +303,6 @@ class Report extends React.Component {
                 throw new Error(message);
             }
             this.setState({reportData: data.data});
-            this.setState({languageData: this.getLanguageData(data.data.language)});
             this.setState({releaseData: this.getReleaseData(data.data.release)});
             this.setState({steps: this.getSteps()})
         }).catch((error) => {
@@ -309,20 +311,12 @@ class Report extends React.Component {
         });
     }
 
-    getLanguageData(language) {
-        let languageList = [];
-        for (const m in language) {
-            languageList.push({
-                "type": m,
-                "value": language[m]
-            })
-        }
-        return languageList
-    }
-
     getReleaseData(release) {
         let releaseList = [];
         for (const m in release) {
+            if (release[m] === 0) {
+                continue;
+            }
             releaseList.push({
                 "timePeriod": m,
                 "value": release[m]
@@ -336,7 +330,6 @@ class Report extends React.Component {
             return []
         }
         // console.log(this.state.reportData);
-        const majorLanguage = getMajorLanguage(this.state.languageData);
         const releaseDescription = getReleaseDescription(this.state.releaseData);
         const keyDescription = getKeyDescription(this.state.reportData.key);
         const acousticnessDescription = getAcousticnessDescription(this.state.reportData.acousticness);
@@ -346,13 +339,8 @@ class Report extends React.Component {
         const speechinessDescription = getSpeechinessDescription(this.state.reportData.speechiness);
         const valenceDescription = getValenceDescription(this.state.reportData.valence);
         const releaseCfg = getReleaseCfg(this.state.releaseData);
-        const languageCfg = getLanguageCfg(this.state.languageData);
 
         let checkboxOptions = [];
-        checkboxOptions.push({
-            "label": majorLanguage,
-            "value": majorLanguage
-        })
 
         if (releaseDescription.Nostalgic) {
             checkboxOptions.push({
@@ -419,10 +407,10 @@ class Report extends React.Component {
                     <Typography>
                         <Row justify="center" align={"middle"} style={{marginTop: 20, minHeight: 30}}>
                             <Col span={10}><Title level={4}>Most of the songs you like are in </Title></Col>
-                            <Col span={4}><Title level={2} type={"danger"}><b>{majorLanguage}</b></Title></Col>
+                            <Col span={4}><Title level={2} type={"danger"}><b>English</b></Title></Col>
                         </Row>
                         {releaseDescription.Nostalgic && (
-                            <Row justify="left" align={"middle"} style={{minHeight: 30}}>
+                            <Row justify="left" align={"middle"} style={{marginTop: 20, minHeight: 30}}>
                                 <Col span={4}><Title level={3}>You have a </Title></Col>
                                 <Col span={6}><Title level={2} type={"warning"}><b>Nostalgic</b></Title></Col>
                                 <Col span={2}><Title level={3}>soul</Title></Col>
@@ -485,34 +473,30 @@ class Report extends React.Component {
                                 <Line {...releaseCfg}/>
                                 <Text>Release</Text>
                             </Col>
-                            <Col span={12}>
-                                <Pie {...languageCfg} />
-                                <Text>Language</Text>
-                            </Col>
                         </Row>
                         <Row justify={"center"} align={"middle"} style={{marginTop: 20}}>
                             <Col span={4}><Text>Acoustic Level:</Text></Col>
-                            <Col span={4}><Title level={2} type={"danger"}><b>{this.state.reportData.acousticness * 100}%</b></Title></Col>
+                            <Col span={4}><Title level={2} type={"danger"}><b>{this.state.reportData.acousticness.toFixed(2) * 100}%</b></Title></Col>
                             <Col span={4}><Text>Danceability:</Text></Col>
-                            <Col span={4}><Title level={2} type={"warning"}><b>{this.state.reportData.danceability * 100}%</b></Title></Col>
+                            <Col span={4}><Title level={2} type={"warning"}><b>{this.state.reportData.danceability.toFixed(2) * 100}%</b></Title></Col>
                         </Row>
                         <Row justify={"center"} align={"middle"} style={{marginTop: 20}}>
                             <Col span={4}><Text>Liveness Level:</Text></Col>
-                            <Col span={4}><Title level={2} type={"danger"}><b>{this.state.reportData.liveness * 100}%</b></Title></Col>
+                            <Col span={4}><Title level={2} type={"danger"}><b>{this.state.reportData.liveness.toFixed(2) * 100}%</b></Title></Col>
                             <Col span={4}><Text>Loudness:</Text></Col>
-                            <Col span={4}><Title level={2} type={"warning"}><b>{this.state.reportData.loudness}dB</b></Title></Col>
+                            <Col span={4}><Title level={2} type={"warning"}><b>{this.state.reportData.loudness.toFixed(0)}dB</b></Title></Col>
                         </Row>
                         <Row justify={"center"} align={"middle"} style={{marginTop: 20}}>
                             <Col span={4}><Text>Speechiness Level:</Text></Col>
-                            <Col span={4}><Title level={2} type={"danger"}><b>{this.state.reportData.speechiness * 100}%</b></Title></Col>
+                            <Col span={4}><Title level={2} type={"danger"}><b>{this.state.reportData.speechiness.toFixed(2) * 100}%</b></Title></Col>
                             <Col span={4}><Text>Valence:</Text></Col>
-                            <Col span={4}><Title level={2} type={"warning"}><b>{this.state.reportData.valence}</b></Title></Col>
+                            <Col span={4}><Title level={2} type={"warning"}><b>{this.state.reportData.valence.toFixed(2)}</b></Title></Col>
                         </Row>
                         <Row justify={"center"} align={"middle"} style={{marginTop: 20}}>
                             <Col span={4}><Text>Energetic Level:</Text></Col>
-                            <Col span={4}><Title level={2} type={"danger"}><b>{this.state.reportData.energy * 100}%</b></Title></Col>
+                            <Col span={4}><Title level={2} type={"danger"}><b>{this.state.reportData.energy.toFixed(2) * 100}%</b></Title></Col>
                             <Col span={4}><Text>Key:</Text></Col>
-                            <Col span={4}><Title level={2} type={"warning"}><b>{this.state.reportData.key}</b></Title></Col>
+                            <Col span={4}><Title level={2} type={"warning"}><b>{this.state.reportData.key.toFixed(2)}</b></Title></Col>
                         </Row>
                     </div>
             },
@@ -522,6 +506,8 @@ class Report extends React.Component {
     render() {
         return (
             <Layout style={{height:"100vh"}}>
+                {this.state.moreRec && <Navigate to="/recommendation" replace={true} state={{fromReport: true,
+                    recommendationData: this.state.recommendationData}}/>}
                 <Header style={{position: 'fixed', zIndex: 1, width: '100%', height: '80px'}}>
                     <Navigator deafultSelectedKey={"report"}/>
                 </Header>

@@ -1,14 +1,10 @@
-import { Menu, Input, Space, Button, Col, Row } from 'antd';
-import { Link } from "react-router-dom";
+import {Menu, Input, Button, Col, Row, message} from 'antd';
+import {Link, Navigate} from "react-router-dom";
 import React from 'react';
 import AliIconFont from "./Icon";
 
 const IconFont = AliIconFont;
 const DinosaurIcon = props => <IconFont type="icon-040-birthday" style={{fontSize: '40px', padding: '15px 10px 0px'}}/>;
-
-const onSearch = value => {
-    console.log(value);
-}
 
 function NoUsers(props) {
     return <Menu theme="dark" mode="horizontal">
@@ -26,6 +22,9 @@ class Navigator extends React.Component {
         this.setState({userId: localStorage.getItem("userId")});
         this.setState({isLoggedIn:
                 this.state.userId !== null && this.state.userId !== undefined && this.state.userId !== ""});
+        if (this.state.query !== "") {
+            this.setState({query: ""});
+        }
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
@@ -40,19 +39,22 @@ class Navigator extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            defaultSelectedKey: props.deafultSelectedKey,
             userId: localStorage.getItem("userId"),
             isLoggedIn: false,
+            isLoggedOut: false,
+            query: ""
         }
         this.LoginOut = this.LoginOut.bind(this);
         this.ShowUser = this.ShowUser.bind(this);
         this.ShowUserState = this.ShowUserState.bind(this);
+        this.onSearch = this.onSearch.bind(this);
     }
 
     LoginOut() {
         localStorage.clear();
         this.setState({userId: ""});
         this.setState({isLoggedIn: false});
+        this.setState({isLoggedOut: true});
     }
 
     ShowUser() {
@@ -77,29 +79,41 @@ class Navigator extends React.Component {
         return <NoUsers/>
     }
 
+    onSearch(value) {
+        if (value === "") {
+            message.error("Please input the search content!");
+            return;
+        }
+        this.setState({query: value});
+    }
+
     render() {
         return (
-            <Row justify="space-between">
-                <Col span={16}>
-                    <Menu theme="dark" mode="horizontal" defaultSelectedKeys={[this.state.defaultSelectedKey]}>
-                        <Menu.Item to="/" key="icon" style={{backgroundColor: '#001529'}}>
-                            <IconFont type="icon-music" style={{fontSize: '40px', padding: '15px 10px 0px'}}/>
-                        </Menu.Item>
-                        <Menu.Item key={"home"}><Link to="/">Home</Link></Menu.Item>
-                        <Menu.Item key="recom" disabled={!this.state.isLoggedIn}><Link to="/recommendation">Recommendation</Link></Menu.Item>
-                        <Menu.Item key="report" disabled={!this.state.isLoggedIn}><Link to="/report">Report</Link></Menu.Item>
-                        <Menu.Item key="interest" disabled={!this.state.isLoggedIn}><Link to="/interest">Test Interests</Link></Menu.Item>
-                        <Menu.Item key="search" style={{padding: '15px 20px 0px', backgroundColor: '#001529'}}>
-                            <Space direction="vertical">
-                                <Input.Search placeholder="Search" onSearch={onSearch} enterButton/>
-                            </Space>
-                        </Menu.Item>
-                    </Menu>
-                </Col>
-                <Col span={4}>
-                    <this.ShowUserState />
-                </Col>
-            </Row>
+            <div>
+                {this.state.query !== "" && <Navigate to={`/search?q=${this.state.query}`} replace={true}/>}
+                {this.state.isLoggedOut && <Navigate to="/" replace={true}/>}
+                <Row justify="space-between">
+                    <Col span={16}>
+                        <Menu theme="dark" mode="horizontal" defaultSelectedKeys={[this.props.deafultSelectedKey]}>
+                            <Menu.Item to="/" key="icon" style={{backgroundColor: '#001529'}}>
+                                <IconFont type="icon-music" style={{fontSize: '40px', padding: '15px 10px 0px'}}/>
+                            </Menu.Item>
+                            <Menu.Item key="home"><Link to="/">Home</Link></Menu.Item>
+                            <Menu.Item key="recom" disabled={!this.state.isLoggedIn}><Link to="/recommendation">Recommendation</Link></Menu.Item>
+                            <Menu.Item key="report" disabled={!this.state.isLoggedIn}><Link to="/report">Report</Link></Menu.Item>
+                            <Menu.Item key="interest" disabled={!this.state.isLoggedIn}><Link to="/interest">Test Interests</Link></Menu.Item>
+                            <Menu.Item key="search" style={{padding: '15px 20px 0px', backgroundColor: '#001529'}}>
+                                <div>
+                                    <Input.Search placeholder="Search" onSearch={this.onSearch} enterButton/>
+                                </div>
+                            </Menu.Item>
+                        </Menu>
+                    </Col>
+                    <Col span={4}>
+                        <this.ShowUserState />
+                    </Col>
+                </Row>
+            </div>
         );
     }
 }

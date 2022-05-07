@@ -6,9 +6,9 @@ import Home from "./pages/Home";
 import Interest from "./pages/Interest";
 import Report from "./pages/Report";
 import Recommendation from "./pages/Recommendation";
-import Detail from "./pages/Detail";
 import Profile from "./pages/Profile";
 import Forget from "./pages/Forget";
+import Search from "./pages/Search";
 
 function App() {
     return (
@@ -21,9 +21,9 @@ function App() {
                     <Route path="/interest" element={<Interest/>}/>
                     <Route path="/report" element={<Report/>}/>
                     <Route path="/recommendation" element={<Recommendation/>}/>
-                    <Route path="/detail" element={<Detail/>}/>
                     <Route path="/profile" element={<Profile/>}/>
                     <Route path="/forget" element={<Forget/>}/>
+                    <Route path="/search" element={<Search/>}/>
                 </Routes>
             </Router>
         </div>

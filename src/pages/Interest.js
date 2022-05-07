@@ -78,10 +78,13 @@ class Interest extends React.Component {
             if (!data.statusOk) {
                 throw new Error(message);
             }
-            this.setState({interestData: data.data.music});
-            this.setState({interestCount: data.data.count});
-            // this.setState({values: this.initialRadioValues()})
-            // this.setState({carouselItems: this.getInterestItems()});
+            if (data.data.count > 5) {
+                this.setState({interestData: data.data.music.slice(0, 5)});
+                this.setState({interestCount: 5});
+            } else {
+                this.setState({interestData: data.data.music});
+                this.setState({interestCount: data.data.count});
+            }
         }).catch((error) => {
             console.error('Error:', error);
             message.error(error.message);
@@ -96,7 +99,7 @@ class Interest extends React.Component {
         for (let i = 0; i < this.state.interestCount; i++) {
             initialValues.push({
                 id: i,
-                value: 1
+                value: 0
             })
         }
         return initialValues;
@@ -121,12 +124,15 @@ class Interest extends React.Component {
                                 cover={<img alt="example1" src={interestItem.imageUrl}/>}
                             >
                                 <Meta title={interestItem.artistName} description={interestItem.musicName} />
+                                <video controls autoPlay={false}>
+                                    <source src={interestItem.musicUrl} type="audio/mpeg"/>
+                                </video>
                             </Card>
                         </Col>
                         <Col span={12}>
                             <Typography><Title level={3}>Rate Your Interests</Title></Typography>
                             <div className="site-layout-background" style={{padding: 24, minHeight: 80}}/>
-                            <Radio.Group onChange={this.onChange} defaultValue={1} name={i.toString()}>
+                            <Radio.Group onChange={this.onChange} defaultValue={0} name={i.toString()}>
                                 <Radio value={1}>
                                     <IconFont type="icon-happy-l" style={{fontSize: '40px', padding: '15px 10px 0px'}}/>
                                 </Radio>
@@ -176,9 +182,9 @@ class Interest extends React.Component {
     }
 
     render() {
-        console.log("interest", this.state.interestData);
-        console.log("values", this.state.values);
-        console.log("items", this.state.carouselItems);
+        // console.log("interest", this.state.interestData);
+        // console.log("values", this.state.values);
+        // console.log("items", this.state.carouselItems);
 
         return (
             <Layout style={{height:"100vh"}}>
@@ -193,7 +199,7 @@ class Interest extends React.Component {
                         this.state.values.length === 0) && <Spin style={{marginTop: 100}}/>}
                     {this.state.interestData !== null && this.state.carouselItems.length !== 0 &&
                         this.state.values.length !== 0 && <div>
-                    <Row justify="center" style={{marginTop: 50}}>
+                    <Row justify="center">
                         <Col span={20} offset={2}>
                         <Carousel dotPosition='right'
                                   dots={false}
