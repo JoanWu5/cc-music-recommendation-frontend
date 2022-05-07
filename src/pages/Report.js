@@ -191,7 +191,7 @@ function interpretReportStatistics(reportData) {
     }
 
     if (queryList.length === 0) {
-        queryList.push("min_popularity=0.4");
+        queryList.push("min_popularity=50");
     }
 
     return queryList.join(",");

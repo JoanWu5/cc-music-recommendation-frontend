@@ -152,7 +152,7 @@ class LikeList extends React.Component {
                                         <Card.Grid style={gridStyle} key={item.musicId}>
                                             <Card
                                                 style={{ width: '100%' }}
-                                                cover={<img alt="example" src={item.imageUrl} />}
+                                                cover={<img alt="example" src={item.imageUrl} style={{height: 250}}/>}
                                             >
                                                 <Meta title={item.musicName} description={item.artistName} />
                                                 <Space align="center">

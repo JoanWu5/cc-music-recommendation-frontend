@@ -76,7 +76,7 @@ function interpretReportStatistics(reportData) {
     }
 
     if (queryList.length === 0) {
-        queryList.push("min_popularity=0.4");
+        queryList.push("min_popularity=50");
     }
 
     return queryList.join(",");
@@ -87,7 +87,8 @@ class Home extends React.Component {
         this.setState({userId: localStorage.getItem("userId")});
         this.setState({isLoggedIn:
                 this.state.userId !== null && this.state.userId !== undefined && this.state.userId !== ""});
-        this.getMoreRecommendation();
+        this.getStatistics();
+        // this.getMoreRecommendation();
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
@@ -195,6 +196,9 @@ class Home extends React.Component {
     }
 
     getMoreRecommendation() {
+        if (this.state.query === "") {
+            return;
+        }
         let url = "https://jdxo4zd1i6.execute-api.us-east-1.amazonaws.com/test/morerecom?";
         if (this.state.isLoggedIn) {
             url += "userId=" + this.state.userId + "&q=" + this.state.query
@@ -208,7 +212,11 @@ class Home extends React.Component {
                 if (!data.statusOk) {
                     throw new Error(message);
                 }
-                this.setState({recommendationData: data.data.music});
+                if (data.data.count > 12) {
+                    this.setState({recommendationData: data.data.music.slice(0, 12)});
+                } else {
+                    this.setState({recommendationData: data.data.music});
+                }
             }).catch((error) => {
             console.error('Error:', error);
             message.error(error.message);
@@ -217,7 +225,7 @@ class Home extends React.Component {
 
     getStatistics() {
         if (!this.state.isLoggedIn) {
-            this.setState({query: "min_popularity=0.4"});
+            this.setState({query: "min_popularity=50"});
         } else {
             if (this.state.reportData !== null) {
                 this.setState({query: interpretReportStatistics(this.state.reportData)});
@@ -240,7 +248,7 @@ class Home extends React.Component {
                                     <Card.Grid style={gridStyle} key={item.musicId}>
                                         <Card
                                             style={{ width: '100%', padding:10 }}
-                                            cover={<img alt="example" src={item.imageUrl} />}
+                                            cover={<img alt="example" src={item.imageUrl} style={{height: 250}}/>}
                                         >
                                             <Meta title={item.musicName} description={item.artistName} />
                                             <Space align="center">

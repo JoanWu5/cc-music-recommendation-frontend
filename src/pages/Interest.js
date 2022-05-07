@@ -121,7 +121,7 @@ class Interest extends React.Component {
                             <Card
                                 hoverable
                                 style={{ width: 300 }}
-                                cover={<img alt="example1" src={interestItem.imageUrl}/>}
+                                cover={<img alt="example" src={interestItem.imageUrl}/>}
                             >
                                 <Meta title={interestItem.artistName} description={interestItem.musicName} />
                                 <video controls autoPlay={false}>
