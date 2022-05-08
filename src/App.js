@@ -11,6 +11,16 @@ import Forget from "./pages/Forget";
 import Search from "./pages/Search";
 
 function App() {
+    // console.log("hash app", window.location.hash);
+    let hash = window.location.hash;
+    let token = localStorage.getItem("token");
+    if (!token && hash) {
+        token = hash.substring(1).split("&").find(elem => elem.startsWith("access_token")).split("=")[1];
+        localStorage.setItem("token", token);
+    }
+    // set location hash to ""
+    window.location.hash = "";
+    // console.log("appjs token", localStorage.getItem("token"));
     return (
         <div className="App">
             <Router>

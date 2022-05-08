@@ -1,7 +1,8 @@
 import React from 'react';
-import {Layout, Row, Col, Menu, Button, Form, Input, Typography, message} from "antd";
+import {Layout, Row, Col, Menu, Button, Form, Input, Typography, message, Modal} from "antd";
 import {Link, Navigate} from "react-router-dom";
 import AliIconFont from "./Icon";
+import { authUrl } from '../spotifyAuth';
 
 const {Header, Content, Footer} = Layout;
 const { Title} = Typography;
@@ -30,7 +31,29 @@ class SignUp extends React.Component {
         super(props);
         this.state = {
             finish: false,
+            isModalVisible: false,
         }
+        this.showModal = this.showModal.bind(this);
+        this.handleCancel = this.handleCancel.bind(this);
+        this.handleOk = this.handleOk.bind(this);
+        this.onFinish = this.onFinish.bind(this);
+    }
+
+    showModal() {
+        this.setState({isModalVisible: true});
+    };
+
+    handleOk() {
+        this.setState({isModalVisible: false});
+        console.log('authorization ok:', authUrl);
+        window.location = authUrl;
+        // window.open(authUrl);
+        this.setState({finish: true});
+    }
+
+    handleCancel() {
+        this.setState({isModalVisible: false});
+        this.setState({finish: true});
     }
 
     onFinish = (values) => {
@@ -44,7 +67,8 @@ class SignUp extends React.Component {
             const userId = data.data.userId;
             console.log(userId)
             localStorage.setItem("userId", userId);
-            this.setState({finish: true});
+            this.setState({isModalVisible: true});
+            // this.setState({finish: true});
             // window.open("/#/", "_self");
         }).catch((error) => {
             console.error('Error:', error.message);
@@ -116,6 +140,10 @@ class SignUp extends React.Component {
                                     </Button>
                                 </Form.Item>
                             </Form>
+                            <Modal title="Authorization" visible={this.state.isModalVisible}
+                                    onOk={this.handleOk} onCancel={this.handleCancel}>
+                                        <p>Do you want us to get your spotify data?</p>
+                            </Modal>
                         </Col>
                     </Row>
                 </Content>

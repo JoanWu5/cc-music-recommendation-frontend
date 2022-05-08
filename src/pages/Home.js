@@ -88,7 +88,9 @@ class Home extends React.Component {
         this.setState({isLoggedIn:
                 this.state.userId !== null && this.state.userId !== undefined && this.state.userId !== ""});
         this.getStatistics();
-        // this.getMoreRecommendation();
+        this.setState({spotifyToken: localStorage.getItem("token")})
+        // console.log("token:", localStorage.getItem("token"))
+        this.getMoreRecommendation();
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
@@ -112,6 +114,11 @@ class Home extends React.Component {
             // console.log(this.state.query);
             this.getMoreRecommendation();
         }
+
+        if (this.state.spotifyToken !== prevState.spotifyToken) {
+            // TODO pass spotifyToken to backend
+            console.log("home component update", this.state.spotifyToken);
+        }
     }
 
     constructor(props) {
@@ -121,7 +128,8 @@ class Home extends React.Component {
             isLoggedIn: false,
             recommendationData: null,
             query: "",
-            reportData: null
+            reportData: null,
+            spotifyToken: ""
         }
         this.getReportData = this.getReportData.bind(this);
         this.showLikeIcon = this.showLikeIcon.bind(this);
