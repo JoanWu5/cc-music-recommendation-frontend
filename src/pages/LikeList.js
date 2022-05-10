@@ -121,7 +121,7 @@ class LikeList extends React.Component {
 
     getLikeData() {
         getData("https://jdxo4zd1i6.execute-api.us-east-1.amazonaws.com/test/like/" + this.state.userId +
-            "&page=" + this.state.page)
+            "?page=" + this.state.page)
             .then(data => {
                 // console.log(data);
                 const message = data.data.message;
@@ -145,7 +145,10 @@ class LikeList extends React.Component {
                         <Row justify="center" style={{marginTop: 50, minHeight: 50}}>
                             <Typography><Title>Liked Songs</Title></Typography>
                         </Row>
-                        <Row justify={"space-around"} align={"middle"}>
+                        {this.state.likeCount === 0 && <Row justify="center" style={{minHeight: 50}}>
+                            <Typography><Title level={2}>You don't have any liked songs</Title></Typography>
+                        </Row>}
+                        {this.state.likeCount !== 0 && <Row justify={"space-around"} align={"middle"}>
                             <Col span={24}>
                                 <Card>
                                     {this.state.likeData.map((item, i) => (
@@ -174,7 +177,7 @@ class LikeList extends React.Component {
                                             defaultCurrent={1} total={this.state.likeCount}
                                             onChange={this.onChange}/>
                             </Col>
-                        </Row>
+                        </Row>}
                     </div>
                 }
             </div>

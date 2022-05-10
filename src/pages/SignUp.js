@@ -31,6 +31,7 @@ class SignUp extends React.Component {
         super(props);
         this.state = {
             finish: false,
+            testInterest: false,
             isModalVisible: false,
         }
         this.showModal = this.showModal.bind(this);
@@ -45,7 +46,7 @@ class SignUp extends React.Component {
 
     handleOk() {
         this.setState({isModalVisible: false});
-        console.log('authorization ok:', authUrl);
+        // console.log('authorization ok:', authUrl);
         window.location = authUrl;
         // window.open(authUrl);
         this.setState({finish: true});
@@ -53,7 +54,7 @@ class SignUp extends React.Component {
 
     handleCancel() {
         this.setState({isModalVisible: false});
-        this.setState({finish: true});
+        this.setState({testInterest: true});
     }
 
     onFinish = (values) => {
@@ -79,6 +80,7 @@ class SignUp extends React.Component {
     render() {
         return (
             <Layout style={{height:"100vh"}}>
+                {this.state.testInterest && <Navigate to="/interest" replace={true}/>}
                 {this.state.finish && <Navigate to="/" replace={true}/>}
                 <Header style={{position: 'fixed', zIndex: 1, width: '100%', height: '80px'}}>
                     <Row justify='space-between'>

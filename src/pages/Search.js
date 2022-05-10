@@ -2,6 +2,7 @@ import {Layout, Row, Col, Card, message, Pagination, Spin, Space, Button} from '
 import React from 'react';
 import Navigator from "./Navigator";
 import AliIconFont from "./Icon";
+import {useLocation} from "react-router-dom";
 
 const IconFont = AliIconFont;
 const {Header, Content, Footer} = Layout;
@@ -38,20 +39,35 @@ async function submitForm(method, url, data) {
     };
 }
 
+function withRouter(Component) {
+    function ComponentWithRouterProp(props) {
+        let location = useLocation();
+        return (
+            <Component location={location}
+                       {...props}
+            />
+        );
+    }
+
+    return ComponentWithRouterProp;
+}
+
 class Search extends React.Component {
     componentDidMount() {
         this.setState({userId: localStorage.getItem("userId")});
         this.setState({isLoggedIn:
                 this.state.userId !== null && this.state.userId !== undefined && this.state.userId !== ""});
-        if (this.state.params && this.state.params !== "") {
-            this.getQueryParams();
+        if (this.props.location && this.props.location.state) {
+            this.setState({query: this.props.location.state.query});
         }
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
         // Typical usage (don't forget to compare props):
-        if (this.state.params !== prevState.params) {
-            this.getQueryParams();
+        if (this.props.location && this.props.location.state) {
+            if (this.props.location.state.query !== prevProps.location.state.query) {
+                this.setState({query: this.props.location.state.query});
+            }
         }
         if (this.state.query !== prevState.query || this.state.page !== prevState.page) {
             this.onSearch();
@@ -63,14 +79,12 @@ class Search extends React.Component {
         this.state = {
             searchData: [],
             searchCount: -1,
-            params: window.location.href.split('?')[1],
             query: "",
             page: 1,
             userId: localStorage.getItem("userId"),
             isLoggedIn: false
         }
         this.onSearch = this.onSearch.bind(this);
-        this.getQueryParams = this.getQueryParams.bind(this);
         this.onChange = this.onChange.bind(this);
         this.showLikeIcon = this.showLikeIcon.bind(this);
         this.onLikeClick = this.onLikeClick.bind(this);
@@ -81,9 +95,15 @@ class Search extends React.Component {
             message.error("Please input the search content!");
             return;
         }
+        let url = "https://jdxo4zd1i6.execute-api.us-east-1.amazonaws.com/test/search?";
+        if (this.state.isLoggedIn) {
+            url += "userId=" + this.state.userId + "&q=" + this.state.query
+        } else {
+            url += "q=" + this.state.query
+        }
+        url += "&page=" + this.state.page
         // console.log(value);
-        getData("https://jdxo4zd1i6.execute-api.us-east-1.amazonaws.com/test/search?q=" + this.state.query +
-            "&page=" + this.state.page)
+        getData(url)
             .then(data => {
                 // console.log(data);
                 const message = data.data.message;
@@ -96,23 +116,6 @@ class Search extends React.Component {
             console.error('Error:', error);
             message.error(error.message);
         });
-    }
-
-    getQueryParams() {
-        if (this.state.params && this.state.params !== '') {
-            const result = this.state.params.split('&').reduce(function (res, item) {
-                const parts = item.split('=');
-                res[parts[0]] = parts[1];
-                return res;
-            }, {});
-            console.log("query", result);
-            if ("q" in result){
-                this.setState({query: result["q"]});
-            }
-            if ("page" in result) {
-                this.setState({page: parseInt(result["page"])})
-            }
-        }
     }
 
     onChange(pageNumber) {
@@ -216,4 +219,4 @@ class Search extends React.Component {
     }
 }
 
-export default Search;
+export default withRouter(Search);

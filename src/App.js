@@ -14,13 +14,20 @@ function App() {
     // console.log("hash app", window.location.hash);
     let hash = window.location.hash;
     let token = localStorage.getItem("token");
-    if (!token && hash) {
-        token = hash.substring(1).split("&").find(elem => elem.startsWith("access_token")).split("=")[1];
-        localStorage.setItem("token", token);
+    if (token === null && hash && hash !== "") {
+        const result = hash.split('&').reduce(function (res, item) {
+            const parts = item.split('=');
+            res[parts[0]] = parts[1];
+            return res;
+        }, {});
+        console.log("token", result["#access_token"]);
+        if ("#access_token" in result){
+            console.log("token", result["#access_token"]);
+            token = result["#access_token"];
+            localStorage.setItem("token", token);
+            window.location.hash = "";
+        }
     }
-    // set location hash to ""
-    window.location.hash = "";
-    // console.log("appjs token", localStorage.getItem("token"));
     return (
         <div className="App">
             <Router>

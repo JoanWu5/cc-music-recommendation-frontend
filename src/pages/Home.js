@@ -87,10 +87,12 @@ class Home extends React.Component {
         this.setState({userId: localStorage.getItem("userId")});
         this.setState({isLoggedIn:
                 this.state.userId !== null && this.state.userId !== undefined && this.state.userId !== ""});
-        this.getStatistics();
+        // this.getStatistics();
         this.setState({spotifyToken: localStorage.getItem("token")})
         // console.log("token:", localStorage.getItem("token"))
-        this.getMoreRecommendation();
+        if (this.state.userId === null) {
+            this.getMoreRecommendation();
+        }
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
@@ -101,6 +103,7 @@ class Home extends React.Component {
         }
 
         if (this.state.isLoggedIn !== prevState.isLoggedIn) {
+            // console.log("now log in");
             this.getReportData();
         }
 
@@ -110,14 +113,29 @@ class Home extends React.Component {
         }
 
         if (this.state.query !== prevState.query) {
-            // console.log("change query data");
-            // console.log(this.state.query);
+            // console.log("change query data", this.state.query, prevState.query);
+            console.log(this.state.query);
             this.getMoreRecommendation();
         }
 
         if (this.state.spotifyToken !== prevState.spotifyToken) {
-            // TODO pass spotifyToken to backend
             console.log("home component update", this.state.spotifyToken);
+            const spotifyData = {};
+            spotifyData.userId = this.state.userId;
+            spotifyData.accessToken = this.state.spotifyToken;
+            submitForm("POST", "https://jdxo4zd1i6.execute-api.us-east-1.amazonaws.com/test/authorize",
+                spotifyData)
+                .then(data => {
+                    // console.log(data);
+                    const dataMessage = data.data.message;
+                    if (!data.statusOk) {
+                        throw new Error(dataMessage);
+                    }
+                    // message.success(dataMessage);
+                }).catch((error) => {
+                console.error('Error:', error);
+                message.error(error.message);
+            });
         }
     }
 
@@ -127,9 +145,9 @@ class Home extends React.Component {
             userId: localStorage.getItem("userId"),
             isLoggedIn: false,
             recommendationData: null,
-            query: "",
+            query: "min_popularity=50",
             reportData: null,
-            spotifyToken: ""
+            spotifyToken: null
         }
         this.getReportData = this.getReportData.bind(this);
         this.showLikeIcon = this.showLikeIcon.bind(this);
@@ -148,7 +166,9 @@ class Home extends React.Component {
                 // console.log(data);
                 const message = data.data.message;
                 if (!data.statusOk) {
-                    throw new Error(message);
+                    console.log("home report data null", message);
+                    this.getMoreRecommendation();
+                    return;
                 }
                 this.setState({reportData: data.data});
             }).catch((error) => {

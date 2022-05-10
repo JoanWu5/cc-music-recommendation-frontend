@@ -107,12 +107,9 @@ function getLivenessDescription(liveness) {
 
 function getSpeechinessDescription(speechiness) {
     let description = {
-        "speech": false,
-        "rap": false,
+        "rap": false
     }
     if (speechiness >= 0.66) {
-        description.speech = true;
-    } else if (speechiness >= 0.33) {
         description.rap = true;
     }
     return description;
@@ -123,9 +120,9 @@ function getValenceDescription(valence) {
         "mood": "normal"
     }
     if (valence >= 0.66) {
-        description.mood = "cheerful";
+        description.mood = "Cheerful";
     } else if (valence <= 0.33) {
-        description.mood = "depressed";
+        description.mood = "Depressed";
     }
     return description;
 }
@@ -146,10 +143,6 @@ function getReleaseDescription(releaseList) {
         description.Nostalgic = true;
     }
     return description;
-}
-
-function checkboxOnChange(checkedValues) {
-    console.log('checked = ', checkedValues);
 }
 
 function interpretReportStatistics(reportData) {
@@ -197,6 +190,54 @@ function interpretReportStatistics(reportData) {
     return queryList.join(",");
 }
 
+function interpretCheckboxStatistics(checkboxValues) {
+    let queryList = [];
+    for (const m in checkboxValues) {
+        if (checkboxValues[m] === "Passionate") {
+            queryList.push("min_energy=0.8");
+        }
+
+        if (checkboxValues[m] === "Low-Key") {
+            queryList.push("max_key=4");
+        }
+
+        if (checkboxValues[m] === "High-Key") {
+            queryList.push("min_key=8");
+        }
+
+        if (checkboxValues[m] === "Cheerful") {
+            queryList.push("min_valence=0.66");
+        }
+
+        if (checkboxValues[m] === "Depressed") {
+            queryList.push("max_valence=0.33");
+        }
+
+        if (checkboxValues[m] === "Danceability") {
+            queryList.push("min_danceability=0.8");
+        }
+
+        if (checkboxValues[m] === "RAP") {
+            queryList.push("min_speechiness=0.66");
+        }
+
+        if (checkboxValues[m] === "Acoustic") {
+            queryList.push("min_acousticness=0.8");
+        }
+
+        if (checkboxValues[m] === "Live") {
+            queryList.push("min_liveness=0.8");
+        }
+
+    }
+
+    if (queryList.length === 0) {
+        queryList.push("min_popularity=50");
+    }
+
+    return queryList.join(",");
+}
+
 class Report extends React.Component {
     componentDidMount() {
         if (this.state.userId !== null && this.state.userId !== undefined && this.state.userId !== "") {
@@ -231,6 +272,7 @@ class Report extends React.Component {
             userId: localStorage.getItem("userId"),
             query: "",
             moreRec: false,
+            checkboxValues: [],
             recommendationData: null
         }
         this.next = this.next.bind(this);
@@ -241,6 +283,7 @@ class Report extends React.Component {
         this.getReleaseData = this.getReleaseData.bind(this);
         this.getMoreRecommendation = this.getMoreRecommendation.bind(this);
         this.getStatistics = this.getStatistics.bind(this);
+        this.checkboxOnChange = this.checkboxOnChange.bind(this);
     }
 
     next() {
@@ -258,7 +301,7 @@ class Report extends React.Component {
                 <Row align={"middle"} justify={"center"}>
                     <Col span={10}>
                         <Checkbox.Group options={this.state.options}
-                                        onChange={checkboxOnChange}/>
+                                        onChange={this.checkboxOnChange}/>
                     </Col>
                     <Col span={4}>
                         <Button size={"middle"} onClick={this.getMoreRecommendation}>
@@ -292,6 +335,11 @@ class Report extends React.Component {
         if (this.state.reportData !== null) {
             this.setState({query: interpretReportStatistics(this.state.reportData)});
         }
+    }
+
+    checkboxOnChange(checkedValues) {
+        console.log('checked = ', checkedValues);
+        this.setState({query: interpretCheckboxStatistics(checkedValues)});
     }
 
     getReportData() {
@@ -365,8 +413,8 @@ class Report extends React.Component {
 
         if (valenceDescription.mood !== "normal") {
             checkboxOptions.push({
-                "label": valenceDescription.mood + "music",
-                "value": valenceDescription.mood + "music"
+                "label": valenceDescription.mood,
+                "value": valenceDescription.mood
             })
         }
 
@@ -405,10 +453,6 @@ class Report extends React.Component {
                 title: 'General Report',
                 content:
                     <Typography>
-                        <Row justify="center" align={"middle"} style={{marginTop: 20, minHeight: 30}}>
-                            <Col span={10}><Title level={4}>Most of the songs you like are in </Title></Col>
-                            <Col span={4}><Title level={2} type={"danger"}><b>English</b></Title></Col>
-                        </Row>
                         {releaseDescription.Nostalgic && (
                             <Row justify="left" align={"middle"} style={{marginTop: 20, minHeight: 30}}>
                                 <Col span={4}><Title level={3}>You have a </Title></Col>
@@ -433,13 +477,13 @@ class Report extends React.Component {
                         {valenceDescription.mood !== "normal" && (
                             <Row justify="center" align={"middle"} style={{minHeight: 30}}>
                                 <Col span={4}><Title level={3}>Most songs you like are </Title></Col>
-                                <Col span={6}><Title level={2} type={"success"}><b>valenceDescription.mood</b></Title></Col>
+                                <Col span={6}><Title level={2} type={"success"}><b>{valenceDescription.mood}</b></Title></Col>
                             </Row>
                         )}
                         {danceabilityDescription.Danceability && (
                             <Row justify="center" align={"middle"} style={{minHeight: 30}}>
                                 <Col span={10}><Title level={3}>Most songs you like has high</Title></Col>
-                                <Col span={8}><Title level={2} type={"warning"}><b>danceability</b></Title></Col>
+                                <Col span={8}><Title level={2} type={"warning"}><b>Danceability</b></Title></Col>
                             </Row>
                         )}
                         {speechinessDescription.rap && (
@@ -451,7 +495,7 @@ class Report extends React.Component {
                         {acousticnessDescription.Acoustic && (
                             <Row justify="center" align={"middle"} style={{minHeight: 30}}>
                                 <Col span={6}><Title level={3}>You're an </Title></Col>
-                                <Col span={4}><Title level={2} type={"danger"}><b>acoustic</b></Title></Col>
+                                <Col span={4}><Title level={2} type={"danger"}><b>Acoustic</b></Title></Col>
                                 <Col span={2}><Title level={3}>lover</Title></Col>
                             </Row>
                         )}
@@ -462,6 +506,14 @@ class Report extends React.Component {
                                 <Col span={2}><Title level={3}>music</Title></Col>
                             </Row>
                         )}
+                        {!releaseDescription.Nostalgic && !energyDescription.Passionate &&
+                            (!keyDescription.hasKey || (keyDescription.hasKey && keyDescription.favor === "Normal")) &&
+                            valenceDescription.mood === "normal" && !danceabilityDescription.Danceability && !speechinessDescription.rap
+                            && !acousticnessDescription.Acoustic && !livenessDescription.Live &&
+                            <Row justify="center" align={"middle"} style={{marginTop: 20, minHeight: 30}}>
+                            <Col span={20}><Title level={4}>Please like more songs so that we can better understand you </Title></Col>
+                            {/*<Col span={4}><Title level={2} type={"danger"}><b>English</b></Title></Col>*/}
+                        </Row>}
                     </Typography>
             },
             {
@@ -476,25 +528,25 @@ class Report extends React.Component {
                         </Row>
                         <Row justify={"center"} align={"middle"} style={{marginTop: 20}}>
                             <Col span={4}><Text>Acoustic Level:</Text></Col>
-                            <Col span={4}><Title level={2} type={"danger"}><b>{this.state.reportData.acousticness.toFixed(2) * 100}%</b></Title></Col>
+                            <Col span={4}><Title level={2} type={"danger"}><b>{(this.state.reportData.acousticness * 100).toFixed(0)}%</b></Title></Col>
                             <Col span={4}><Text>Danceability:</Text></Col>
-                            <Col span={4}><Title level={2} type={"warning"}><b>{this.state.reportData.danceability.toFixed(2) * 100}%</b></Title></Col>
+                            <Col span={4}><Title level={2} type={"warning"}><b>{(this.state.reportData.danceability * 100).toFixed(0)}%</b></Title></Col>
                         </Row>
                         <Row justify={"center"} align={"middle"} style={{marginTop: 20}}>
                             <Col span={4}><Text>Liveness Level:</Text></Col>
-                            <Col span={4}><Title level={2} type={"danger"}><b>{this.state.reportData.liveness.toFixed(2) * 100}%</b></Title></Col>
+                            <Col span={4}><Title level={2} type={"danger"}><b>{(this.state.reportData.liveness * 100).toFixed(0)}%</b></Title></Col>
                             <Col span={4}><Text>Loudness:</Text></Col>
                             <Col span={4}><Title level={2} type={"warning"}><b>{this.state.reportData.loudness.toFixed(0)}dB</b></Title></Col>
                         </Row>
                         <Row justify={"center"} align={"middle"} style={{marginTop: 20}}>
                             <Col span={4}><Text>Speechiness Level:</Text></Col>
-                            <Col span={4}><Title level={2} type={"danger"}><b>{this.state.reportData.speechiness.toFixed(2) * 100}%</b></Title></Col>
+                            <Col span={4}><Title level={2} type={"danger"}><b>{(this.state.reportData.speechiness * 100).toFixed(0)}%</b></Title></Col>
                             <Col span={4}><Text>Valence:</Text></Col>
                             <Col span={4}><Title level={2} type={"warning"}><b>{this.state.reportData.valence.toFixed(2)}</b></Title></Col>
                         </Row>
                         <Row justify={"center"} align={"middle"} style={{marginTop: 20}}>
                             <Col span={4}><Text>Energetic Level:</Text></Col>
-                            <Col span={4}><Title level={2} type={"danger"}><b>{this.state.reportData.energy.toFixed(2) * 100}%</b></Title></Col>
+                            <Col span={4}><Title level={2} type={"danger"}><b>{(this.state.reportData.energy * 100).toFixed(0)}%</b></Title></Col>
                             <Col span={4}><Text>Key:</Text></Col>
                             <Col span={4}><Title level={2} type={"warning"}><b>{this.state.reportData.key.toFixed(2)}</b></Title></Col>
                         </Row>

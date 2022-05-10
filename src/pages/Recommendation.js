@@ -56,19 +56,30 @@ class Recommendation extends React.Component {
     componentDidMount() {
         if (this.state.userId !== null && this.state.userId !== undefined && this.state.userId !== "") {
             if (this.props.location && this.props.location.state) {
-                this.setState({fromReport: this.props.location.state.fromReport})
+                console.log("from report", this.props.location.state.fromReport);
+                this.setState({fromReport: this.props.location.state.fromReport});
+                this.setState({recommendationData: this.props.location.state.recommendationData});
+                return;
+                // this.getRecommendationData();
             } else {
-                this.setState({fromReport: false})
+                this.setState({fromReport: false});
             }
-            // this.getRecommendationData();
+
+            if (!this.state.moreRecommendation) {
+                this.getRecommendationData();
+            }
         } else {
             message.error("Please Login First!");
         }
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
-        if (this.state.fromReport !== prevState.fromReport) {
+        if (this.state.fromReport && this.state.fromReport !== prevState.fromReport) {
             this.getRecommendationData();
+        }
+
+        if (this.state.moreRecommendation && this.state.moreRecommendation !== prevState.moreRecommendation) {
+            this.getMoreRecommendation();
         }
     }
 
@@ -77,19 +88,22 @@ class Recommendation extends React.Component {
         this.state = {
             recommendationData: null,
             userId: localStorage.getItem("userId"),
-            fromReport: null
+            fromReport: null,
+            query: "min_popularity=50",
+            moreRecommendation: false
         }
         this.getRecommendationData = this.getRecommendationData.bind(this);
         this.getAnotherRecommendationData = this.getAnotherRecommendationData.bind(this);
         this.showLikeIcon = this.showLikeIcon.bind(this);
         this.onLikeClick = this.onLikeClick.bind(this);
+        this.getMoreRecommendation = this.getMoreRecommendation.bind(this);
     }
 
     getRecommendationData() {
-        // console.log(this.state.fromReport);
+        console.log(this.state.fromReport);
         if (this.state.fromReport===true) {
             this.setState({recommendationData: this.props.location.state.recommendationData});
-            // this.setState({fromReport: false});
+            this.setState({fromReport: false});
             return;
         }
         getData("https://jdxo4zd1i6.execute-api.us-east-1.amazonaws.com/test/recommendation/" + this.state.userId)
@@ -97,9 +111,17 @@ class Recommendation extends React.Component {
             // console.log(data);
             const message = data.data.message;
             if (!data.statusOk) {
-                throw new Error(message);
+                // throw new Error(message);
+                console.log("recommendation error", message);
+                this.setState({moreRecommendation: true});
+                return;
             }
-            if (data.data.music.length > 12) {
+            if (data.data.count === 0) {
+                this.setState({moreRecommendation: true});
+                return;
+            }
+            this.setState({moreRecommendation: false});
+            if (data.data.count > 12) {
                 this.setState({recommendationData: data.data.music.slice(0, 12)});
             } else {
                 this.setState({recommendationData: data.data.music});
@@ -110,9 +132,35 @@ class Recommendation extends React.Component {
         });
     }
 
+    getMoreRecommendation() {
+        let url = "https://jdxo4zd1i6.execute-api.us-east-1.amazonaws.com/test/morerecom?";
+        if (this.state.isLoggedIn) {
+            url += "userId=" + this.state.userId + "&q=" + this.state.query
+        } else {
+            url += "q=" + this.state.query
+        }
+        getData(url)
+            .then(data => {
+                // console.log(data);
+                const message = data.data.message;
+                if (!data.statusOk) {
+                    throw new Error(message);
+                }
+                if (data.data.count > 12) {
+                    this.setState({recommendationData: data.data.music.slice(0, 12)});
+                } else {
+                    this.setState({recommendationData: data.data.music});
+                }
+            }).catch((error) => {
+            console.error('Error:', error);
+            message.error(error.message);
+        });
+    }
+
     getAnotherRecommendationData() {
         this.setState({recommendationData: null});
-        this.setState({fromReport: false})
+        this.setState({fromReport: false});
+        this.setState({moreRecommendation: false});
         this.getRecommendationData();
     }
 

@@ -1,5 +1,5 @@
 const authEndpoint = "https://accounts.spotify.com/authorize";
-const redirectUri = "http://localhost:3000";
+const redirectUri = "http://project-frontend222.s3-website-us-east-1.amazonaws.com/build2/index.html";
 const clientId = "ab9e1685ad7449c488cc0434e557f9a6";
 const responseType = "token"
 

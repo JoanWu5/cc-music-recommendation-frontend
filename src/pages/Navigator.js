@@ -90,7 +90,8 @@ class Navigator extends React.Component {
     render() {
         return (
             <div>
-                {this.state.query !== "" && <Navigate to={`/search?q=${this.state.query}`} replace={true}/>}
+                {this.state.query !== "" && <Navigate to={`/search?q=${this.state.query}`} replace={true}
+                                                      state={{query: this.state.query}}/>}
                 {this.state.isLoggedOut && <Navigate to="/" replace={true}/>}
                 <Row justify="space-between">
                     <Col span={16}>
