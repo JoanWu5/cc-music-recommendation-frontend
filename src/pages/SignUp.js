@@ -85,7 +85,9 @@ class SignUp extends React.Component {
                 <Header style={{position: 'fixed', zIndex: 1, width: '100%', height: '80px'}}>
                     <Row justify='space-between'>
                         <Col>
-                            <IconFont type="icon-music" style={{fontSize: '40px', padding: '15px 10px 0px'}}/>
+                            <Link to="/">
+                                <IconFont type="icon-music" style={{fontSize: '40px', padding: '15px 10px 0px'}}/>
+                            </Link>
                         </Col>
                         <Col style={{width:'30%'}}>
                             <Menu theme="dark" mode="horizontal">

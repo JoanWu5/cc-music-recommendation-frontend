@@ -20,7 +20,7 @@ function App() {
             res[parts[0]] = parts[1];
             return res;
         }, {});
-        console.log("token", result["#access_token"]);
+        // console.log("token", result["#access_token"]);
         if ("#access_token" in result){
             console.log("token", result["#access_token"]);
             token = result["#access_token"];

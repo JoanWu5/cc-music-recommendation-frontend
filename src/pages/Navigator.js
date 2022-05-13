@@ -96,8 +96,10 @@ class Navigator extends React.Component {
                 <Row justify="space-between">
                     <Col span={16}>
                         <Menu theme="dark" mode="horizontal" defaultSelectedKeys={[this.props.deafultSelectedKey]}>
-                            <Menu.Item to="/" key="icon" style={{backgroundColor: '#001529'}}>
-                                <IconFont type="icon-music" style={{fontSize: '40px', padding: '15px 10px 0px'}}/>
+                            <Menu.Item key="icon" style={{backgroundColor: '#001529'}}>
+                                <Link to="/">
+                                    <IconFont type="icon-music" style={{fontSize: '40px', padding: '15px 10px 0px'}}/>
+                                </Link>
                             </Menu.Item>
                             <Menu.Item key="home"><Link to="/">Home</Link></Menu.Item>
                             <Menu.Item key="recom" disabled={!this.state.isLoggedIn}><Link to="/recommendation">Recommendation</Link></Menu.Item>

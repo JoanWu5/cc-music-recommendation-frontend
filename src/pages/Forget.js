@@ -1,6 +1,7 @@
 import React from 'react';
 import Navigator from "./Navigator";
 import {Layout, Row, Col, Button, Form, Input, message} from "antd";
+import {Navigate} from "react-router-dom";
 
 const { Header, Content, Footer} = Layout;
 
@@ -34,33 +35,42 @@ if (params && params !== '') {
     }
 }
 
-const onFinish = (values) => {
-    values["forget"] = true;
-    console.log('Success:', values);
-    console.log(userId)
-    submitForm("https://jdxo4zd1i6.execute-api.us-east-1.amazonaws.com/test/password/" + userId, values).then(data => {
-        // console.log(data);
-        const dataMessage = data.data.message;
-        if (!data.statusOk) {
-            throw new Error(dataMessage);
-        }
-        message.success(dataMessage);
-    }).catch((error) => {
-        console.error('Error:', error.message);
-        message.error(error.message);
-    });
-};
-
 const onFinishFailed = (errorInfo) => {
     console.log('Failed:', errorInfo);
 };
 
 class Forget extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            signIn: false
+        }
+        this.onFinish = this.onFinish.bind(this);
+    }
+
+    onFinish = (values) => {
+        values["forget"] = true;
+        submitForm("https://jdxo4zd1i6.execute-api.us-east-1.amazonaws.com/test/password/" + userId, values)
+            .then(data => {
+            // console.log(data);
+            const dataMessage = data.data.message;
+            if (!data.statusOk) {
+                throw new Error(dataMessage);
+            }
+            this.setState({signIn: true});
+            message.success(dataMessage);
+        }).catch((error) => {
+            console.error('Error:', error.message);
+            message.error(error.message);
+        });
+    };
+
     render() {
         return (
             <Layout style={{height:"100vh"}}>
+                {this.state.signIn && <Navigate to="/login" replace={true}/>}
                 <Header style={{position: 'fixed', zIndex: 1, width: '100%', height: '80px'}}>
-                    <Navigator/>
+                    <Navigator />
                 </Header>
                 <Content className="site-layout" style={{minHeight: 200, padding: '0 50px', marginTop: 80}}>
                     <Row justify={"space-around"} align={"middle"} style={{marginTop: 80}}>
@@ -69,7 +79,7 @@ class Forget extends React.Component {
                                 name="forgetForm"
                                 layout="vertical"
                                 initialValues={{ remember: true }}
-                                onFinish={onFinish}
+                                onFinish={this.onFinish}
                                 onFinishFailed={onFinishFailed}
                                 autoComplete="off"
                                 size={"large"}

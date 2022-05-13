@@ -39,6 +39,7 @@ class SignIn extends React.Component {
         this.ShowMessage = this.ShowMessage.bind(this);
         this.onForgetFinish = this.onForgetFinish.bind(this);
         this.onFinish = this.onFinish.bind(this);
+        this.sendEmail = this.sendEmail.bind(this);
     }
 
     showModal() {
@@ -64,12 +65,32 @@ class SignIn extends React.Component {
     onForgetFinish = (values) => {
         console.log('Success:', values);
         submitForm("https://jdxo4zd1i6.execute-api.us-east-1.amazonaws.com/test/forget", values).then(data => {
-            // console.log(data);
-            this.setState({isSendEmail: true});
+            console.log(data);
+            // this.setState({isSendEmail: true});
             const message = data.data.message;
             if (!data.statusOk) {
                 throw new Error(message);
             }
+            this.sendEmail(data.data.userId, values.email);
+        }).catch((error) => {
+            console.error('Error:', error.message);
+            message.error(error.message);
+        });
+    }
+
+    sendEmail(userId, email) {
+        const sendData = {
+            userId: userId,
+            email: email
+        }
+        submitForm("https://jdxo4zd1i6.execute-api.us-east-1.amazonaws.com/test/musicSES", sendData).then(data => {
+            console.log(data);
+            const message = data.data.message;
+            if (!data.statusOk) {
+                throw new Error(message);
+            }
+            this.setState({isSendEmail: true});
+            // console.log(message);
         }).catch((error) => {
             console.error('Error:', error.message);
             message.error(error.message);
@@ -103,7 +124,9 @@ class SignIn extends React.Component {
                 <Header style={{position: 'fixed', zIndex: 1, width: '100%', height: '80px'}}>
                     <Row justify='space-between'>
                         <Col>
-                            <IconFont type="icon-music" style={{fontSize: '40px', padding: '15px 10px 0px'}}/>
+                            <Link to="/">
+                                <IconFont type="icon-music" style={{fontSize: '40px', padding: '15px 10px 0px'}}/>
+                            </Link>
                         </Col>
                         <Col style={{width:'30%'}}>
                             <Menu theme="dark" mode="horizontal">
